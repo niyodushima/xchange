@@ -112,6 +112,9 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       const stream = await startLocalVideoIfNotStarted();
       if (!stream) return;
 
+      // Ensure viewer tracks are added
+      stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+
       await pcRef.current.setRemoteDescription(offer);
       const answer = await pcRef.current.createAnswer();
       await pcRef.current.setLocalDescription(answer);
@@ -160,6 +163,9 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     // ✅ Host adds local tracks before creating offer
     const stream = await startLocalVideoIfNotStarted();
     if (!stream) return;
+
+    // Ensure host tracks are added
+    stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
 
     const offer = await pcRef.current.createOffer({
       offerToReceiveAudio: true,
