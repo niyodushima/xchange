@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 
 const SIGNALING_URL =
@@ -46,7 +46,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     return () => clearInterval(interval);
   }, [callActive, role, roomId]);
 
-  const createPeerConnection = () => {
+  const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection({ iceServers });
     pc.ontrack = (event) => {
       const [stream] = event.streams;
@@ -60,7 +60,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       }
     };
     return pc;
-  };
+  }, [roomId]);
 
   const startLocalVideoIfNotStarted = async () => {
     if (localStreamRef.current) return localStreamRef.current;
@@ -131,7 +131,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       socket.off("chat-message", handleChat);
       socket.disconnect();
     };
-  }, [role]);
+  }, [role, roomId, createPeerConnection]);
 
   const joinRoom = (targetRoomId) => {
     if (!targetRoomId) return;
