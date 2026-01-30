@@ -65,18 +65,31 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const startLocalVideoIfNotStarted = async () => {
     if (localStreamRef.current) return localStreamRef.current;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const constraints = { video: true, audio: true };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
 
       // ✅ Always add tracks to peer connection
       if (pcRef.current) {
         stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
       }
+
       return stream;
     } catch (err) {
-      console.error("Media access denied:", err);
-      alert("Please allow camera and microphone to join the call.");
+      console.error("Media access failed:", err);
+
+      if (err.name === "NotFoundError" || err.name === "OverconstrainedError") {
+        alert("No camera or microphone found. Please connect a device.");
+      } else if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+        alert("Please allow camera and microphone access in your browser settings.");
+      } else {
+        alert("Media access failed: " + err.message);
+      }
+
       return null;
     }
   };
@@ -204,4 +217,3 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     sendHeart,
   };
 }
- 
