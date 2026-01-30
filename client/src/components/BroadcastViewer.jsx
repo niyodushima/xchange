@@ -1,68 +1,225 @@
-import React, { useEffect } from "react";
-import { useWebRTC } from "../hooks/useWebRTC";
-import ChatPanel from "./ChatPanel";
-import HeartsOverlay from "./HeartsOverlay";
-import "./VideoChat.css";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { io } from "socket.io-client";
 
-export default function BroadcastViewer({ username = "Viewer" }) {
-  const {
+const SIGNALING_URL =
+  process.env.REACT_APP_SIGNALING_URL || "https://zazza-backend.onrender.com";
+
+const TURN_URLS = (process.env.REACT_APP_TURN_URLS || "")
+  .split(",")
+  .map((u) => u.trim())
+  .filter(Boolean);
+const TURN_USERNAME = process.env.REACT_APP_TURN_USERNAME || "";
+const TURN_CREDENTIAL = process.env.REACT_APP_TURN_CREDENTIAL || "";
+
+const iceServers =
+  TURN_URLS.length
+    ? [{ urls: TURN_URLS, username: TURN_USERNAME, credential: TURN_CREDENTIAL }]
+    : [{ urls: "stun:stun.l.google.com:19302" }];
+
+export function useWebRTC(role = "viewer", username = "Guest") {
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const socketRef = useRef(null);
+  const pcRef = useRef(null);
+
+  const [roomId, setRoomId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [viewerCount, setViewerCount] = useState(0);
+  const [callActive, setCallActive] = useState(false);
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
+
+  // Host emits time; viewers mirror it.
+  useEffect(() => {
+    let interval;
+    if (callActive && role === "host") {
+      interval = setInterval(() => {
+        setSecondsElapsed((prev) => {
+          const next = prev + 1;
+          if (roomId) socketRef.current?.emit("session-time", { roomId, seconds: next });
+          return next;
+        });
+      }, 1000);
+    } else if (!callActive) {
+      setSecondsElapsed(0);
+    }
+    return () => clearInterval(interval);
+  }, [callActive, role, roomId]);
+
+  const createPeerConnection = useCallback(() => {
+    const pc = new RTCPeerConnection({ iceServers });
+    pc.ontrack = (event) => {
+      const [stream] = event.streams;
+      if (remoteVideoRef.current && stream) {
+        remoteVideoRef.current.srcObject = stream;
+      }
+    };
+    pc.onicecandidate = (event) => {
+      if (event.candidate && roomId) {
+        socketRef.current?.emit("ice-candidate", { roomId, candidate: event.candidate });
+      }
+    };
+    return pc;
+  }, [roomId]);
+
+  const startLocalVideoIfNotStarted = async () => {
+    if (localStreamRef.current) return localStreamRef.current;
+    try {
+      const constraints = { video: true, audio: true };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      localStreamRef.current = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+
+      // ✅ Always add tracks to peer connection
+      if (pcRef.current) {
+        stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+      }
+
+      return stream;
+    } catch (err) {
+      console.error("Media access failed:", err);
+
+      if (err.name === "NotFoundError" || err.name === "OverconstrainedError") {
+        alert("No camera or microphone found. Please connect a device.");
+      } else if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+        alert("Please allow camera and microphone access in your browser settings.");
+      } else {
+        alert("Media access failed: " + err.message);
+      }
+
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const socket = io(SIGNALING_URL, { path: "/socket.io" });
+    socketRef.current = socket;
+
+    const handleChat = (msg) => setMessages((prev) => [...prev, msg]);
+
+    socket.on("room-joined", ({ roomId: joined }) => {
+      setRoomId(joined);
+      if (!pcRef.current) pcRef.current = createPeerConnection();
+    });
+
+    socket.on("offer", async (offer) => {
+      if (!pcRef.current) pcRef.current = createPeerConnection();
+
+      // ✅ Viewer adds local tracks before answering
+      const stream = await startLocalVideoIfNotStarted();
+      if (!stream) return;
+
+      // Ensure viewer tracks are added
+      stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+
+      await pcRef.current.setRemoteDescription(offer);
+      const answer = await pcRef.current.createAnswer();
+      await pcRef.current.setLocalDescription(answer);
+      socket.emit("answer", { roomId, answer });
+      setCallActive(true);
+    });
+
+    socket.on("answer", async (answer) => {
+      if (pcRef.current) {
+        await pcRef.current.setRemoteDescription(answer);
+        setCallActive(true);
+      }
+    });
+
+    socket.on("ice-candidate", async (candidate) => {
+      try {
+        await pcRef.current?.addIceCandidate(candidate);
+      } catch (err) {
+        console.warn("Bad ICE candidate:", err);
+      }
+    });
+
+    socket.on("chat-message", handleChat);
+    socket.on("viewer-count", (count) => setViewerCount(count));
+    socket.on("session-time", (seconds) => {
+      if (role !== "host") setSecondsElapsed(seconds);
+    });
+
+    return () => {
+      socket.off("chat-message", handleChat);
+      socket.disconnect();
+    };
+  }, [role, roomId, createPeerConnection]);
+
+  const joinRoom = (targetRoomId) => {
+    if (!targetRoomId) return;
+    socketRef.current?.emit("join-room", { roomId: targetRoomId, role, name: username });
+    setRoomId(targetRoomId);
+    if (!pcRef.current) pcRef.current = createPeerConnection();
+  };
+
+  const startCall = async () => {
+    if (!roomId) return;
+    if (!pcRef.current) pcRef.current = createPeerConnection();
+
+    // ✅ Host adds local tracks before creating offer
+    const stream = await startLocalVideoIfNotStarted();
+    if (!stream) return;
+
+    // Ensure host tracks are added
+    stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+
+    const offer = await pcRef.current.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
+    await pcRef.current.setLocalDescription(offer);
+    socketRef.current?.emit("offer", { roomId, offer });
+    setCallActive(true);
+    setSecondsElapsed(0);
+  };
+
+  const endCall = () => {
+    setCallActive(false);
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    localStreamRef.current = null;
+
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+
+    try {
+      pcRef.current?.close();
+    } catch {}
+    pcRef.current = null;
+  };
+
+  const sendChatMessage = (text) => {
+    const trimmed = (text || "").trim();
+    if (!trimmed || !roomId) return;
+    const msg = { roomId, user: username, text: trimmed, timestamp: Date.now() };
+    socketRef.current?.emit("chat-message", msg);
+  };
+
+  const sendHeart = () => {
+    if (!roomId) return;
+    socketRef.current?.emit("heart", { roomId });
+  };
+
+  const formattedTime = () => {
+    const m = Math.floor(secondsElapsed / 60).toString().padStart(2, "0");
+    const s = (secondsElapsed % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  return {
     localVideoRef,
     remoteVideoRef,
     messages,
     sendChatMessage,
     callActive,
-    joinRoom,
-    viewerCount,
     formattedTime,
-    sendHeart,
+    joinRoom,
     startCall,
     endCall,
-  } = useWebRTC("viewer", username);
-
-  // Auto‑join the demo room when component mounts
-  useEffect(() => {
-    joinRoom("demo-room");
-  }, [joinRoom]);
-
-  return (
-    <div className="vc-stage">
-      {/* Video tiles */}
-      <div className="vc-videos">
-        {/* Local viewer video */}
-        <div className="vc-video">
-          <video ref={localVideoRef} autoPlay muted playsInline />
-          <div className="vc-label">🎥 {username} (You)</div>
-        </div>
-
-        {/* Remote host video */}
-        <div className="vc-video">
-          <video ref={remoteVideoRef} autoPlay playsInline />
-          <div className="vc-label">
-            {callActive ? "Host live" : "Waiting for host…"}
-          </div>
-          <HeartsOverlay onHeart={sendHeart} />
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="vc-controls">
-        <button
-          onClick={callActive ? endCall : startCall}
-          className="primary"
-        >
-          {callActive ? "Leave" : "Join Live"}
-        </button>
-        <div className="vc-stats">
-          ⏱ {formattedTime()} • 👥 {viewerCount}
-        </div>
-      </div>
-
-      {/* Chat panel */}
-      <ChatPanel
-        messages={messages}
-        sendMessage={sendChatMessage}
-        username={username}
-      />
-    </div>
-  );
+    viewerCount,
+    sendHeart,
+  };
 }
