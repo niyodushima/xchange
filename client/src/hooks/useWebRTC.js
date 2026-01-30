@@ -68,7 +68,11 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      stream.getTracks().forEach((track) => pcRef.current?.addTrack(track, stream));
+
+      // ✅ Always add tracks to peer connection
+      if (pcRef.current) {
+        stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+      }
       return stream;
     } catch (err) {
       console.error("Media access denied:", err);
@@ -90,7 +94,11 @@ export function useWebRTC(role = "viewer", username = "Guest") {
 
     socket.on("offer", async (offer) => {
       if (!pcRef.current) pcRef.current = createPeerConnection();
-      await startLocalVideoIfNotStarted();
+
+      // ✅ Viewer adds local tracks before answering
+      const stream = await startLocalVideoIfNotStarted();
+      if (!stream) return;
+
       await pcRef.current.setRemoteDescription(offer);
       const answer = await pcRef.current.createAnswer();
       await pcRef.current.setLocalDescription(answer);
@@ -119,8 +127,6 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       if (role !== "host") setSecondsElapsed(seconds);
     });
 
-    // ❌ Removed system message listener
-
     return () => {
       socket.off("chat-message", handleChat);
       socket.disconnect();
@@ -137,8 +143,11 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const startCall = async () => {
     if (!roomId) return;
     if (!pcRef.current) pcRef.current = createPeerConnection();
+
+    // ✅ Host adds local tracks before creating offer
     const stream = await startLocalVideoIfNotStarted();
     if (!stream) return;
+
     const offer = await pcRef.current.createOffer({
       offerToReceiveAudio: true,
       offerToReceiveVideo: true,
