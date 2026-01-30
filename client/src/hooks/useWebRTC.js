@@ -75,7 +75,10 @@ export function useWebRTC(role = "viewer", username = "Guest") {
 
       // ✅ Always add tracks to peer connection
       if (pcRef.current) {
-        stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+        stream.getTracks().forEach((track) => {
+          console.log("Adding track:", track.kind);
+          pcRef.current.addTrack(track, stream);
+        });
       }
 
       return stream;
@@ -112,8 +115,10 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       const stream = await startLocalVideoIfNotStarted();
       if (!stream) return;
 
-      // Ensure viewer tracks are added
-      stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+      stream.getTracks().forEach((track) => {
+        console.log("Viewer adding track:", track.kind);
+        pcRef.current.addTrack(track, stream);
+      });
 
       await pcRef.current.setRemoteDescription(offer);
       const answer = await pcRef.current.createAnswer();
@@ -164,8 +169,10 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     const stream = await startLocalVideoIfNotStarted();
     if (!stream) return;
 
-    // Ensure host tracks are added
-    stream.getTracks().forEach((track) => pcRef.current.addTrack(track, stream));
+    stream.getTracks().forEach((track) => {
+      console.log("Host adding track:", track.kind);
+      pcRef.current.addTrack(track, stream);
+    });
 
     const offer = await pcRef.current.createOffer({
       offerToReceiveAudio: true,
