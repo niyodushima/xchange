@@ -48,17 +48,22 @@ export function useWebRTC(role = "viewer", username = "Guest") {
 
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection({ iceServers });
+
     pc.ontrack = (event) => {
+      console.log("Remote track received:", event.track.kind);
       const [stream] = event.streams;
       if (remoteVideoRef.current && stream) {
         remoteVideoRef.current.srcObject = stream;
       }
     };
+
     pc.onicecandidate = (event) => {
       if (event.candidate && roomId) {
+        console.log("ICE candidate:", event.candidate);
         socketRef.current?.emit("ice-candidate", { roomId, candidate: event.candidate });
       }
     };
+
     return pc;
   }, [roomId]);
 
@@ -73,7 +78,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
         localVideoRef.current.srcObject = stream;
       }
 
-      // ✅ Add tracks once here
+      // ✅ Add tracks once here, after pcRef exists
       if (pcRef.current) {
         stream.getTracks().forEach((track) => {
           console.log("Adding track:", track.kind);
@@ -162,13 +167,12 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     const stream = await startLocalVideoIfNotStarted();
     if (!stream) return;
 
-    // ❌ No duplicate addTrack here
-
     const offer = await pcRef.current.createOffer({
       offerToReceiveAudio: true,
       offerToReceiveVideo: true,
     });
     await pcRef.current.setLocalDescription(offer);
+    console.log("Local Description (offer):", pcRef.current.localDescription);
     socketRef.current?.emit("offer", { roomId, offer });
     setCallActive(true);
     setSecondsElapsed(0);
