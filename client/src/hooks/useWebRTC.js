@@ -20,6 +20,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(new MediaStream()); // ✅ persistent remote stream
   const socketRef = useRef(null);
   const pcRef = useRef(null);
 
@@ -51,9 +52,9 @@ export function useWebRTC(role = "viewer", username = "Guest") {
 
     pc.ontrack = (event) => {
       console.log("Remote track received:", event.track.kind);
-      const [stream] = event.streams;
-      if (remoteVideoRef.current && stream) {
-        remoteVideoRef.current.srcObject = stream;
+      remoteStreamRef.current.addTrack(event.track);
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
       }
     };
 
@@ -78,7 +79,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
         localVideoRef.current.srcObject = stream;
       }
 
-      // ✅ Add tracks once here, after pcRef exists
+      // ✅ Add tracks once here
       if (pcRef.current) {
         stream.getTracks().forEach((track) => {
           console.log("Adding track:", track.kind);
@@ -190,6 +191,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       pcRef.current?.close();
     } catch {}
     pcRef.current = null;
+    remoteStreamRef.current = new MediaStream(); // reset remote stream
   };
 
   const sendChatMessage = (text) => {
