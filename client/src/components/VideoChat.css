@@ -6,11 +6,10 @@
   border-radius: 10px;
   background: var(--bg-color, #fafafa);
   color: var(--text-color, #222);
-  height: 100vh; /* fill viewport */
+  height: 100vh;
   box-sizing: border-box;
 }
 
-/* Dark mode */
 @media (prefers-color-scheme: dark) {
   .vc-stage {
     --bg-color: #1e1e1e;
@@ -56,7 +55,7 @@
 
 .vc-video {
   position: relative;
-  flex: 1 1 50%; /* half width on desktop */
+  flex: 1 1 50%;
   max-width: 50%;
   background: #000;
   border-radius: 8px;
@@ -69,7 +68,7 @@
 .vc-video video {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* ✅ fills container */
+  object-fit: cover;
   border-radius: 8px;
 }
 
@@ -92,7 +91,6 @@
   border-top: 1px solid var(--border-color, #ddd);
 }
 
-/* Responsive video layout */
 @media (max-width: 768px) {
   .vc-videos {
     flex-direction: column;
@@ -100,16 +98,12 @@
   }
 
   .vc-video {
-    flex: 1 1 100%; /* full width on mobile */
+    flex: 1 1 100%;
     max-width: 100%;
-    height: 50%; /* stack neatly */
+    height: 50%;
   }
 
   .vc-video video {
     height: 100%;
-  }
-
-  .vc-watermark img {
-    max-width: 120px;
   }
 }
