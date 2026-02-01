@@ -73,7 +73,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
         localVideoRef.current.srcObject = stream;
       }
 
-      // ✅ Always add tracks to peer connection
+      // ✅ Add tracks once here
       if (pcRef.current) {
         stream.getTracks().forEach((track) => {
           console.log("Adding track:", track.kind);
@@ -111,14 +111,8 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     socket.on("offer", async (offer) => {
       if (!pcRef.current) pcRef.current = createPeerConnection();
 
-      // ✅ Viewer adds local tracks before answering
       const stream = await startLocalVideoIfNotStarted();
       if (!stream) return;
-
-      stream.getTracks().forEach((track) => {
-        console.log("Viewer adding track:", track.kind);
-        pcRef.current.addTrack(track, stream);
-      });
 
       await pcRef.current.setRemoteDescription(offer);
       const answer = await pcRef.current.createAnswer();
@@ -165,14 +159,10 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     if (!roomId) return;
     if (!pcRef.current) pcRef.current = createPeerConnection();
 
-    // ✅ Host adds local tracks before creating offer
     const stream = await startLocalVideoIfNotStarted();
     if (!stream) return;
 
-    stream.getTracks().forEach((track) => {
-      console.log("Host adding track:", track.kind);
-      pcRef.current.addTrack(track, stream);
-    });
+    // ❌ No duplicate addTrack here
 
     const offer = await pcRef.current.createOffer({
       offerToReceiveAudio: true,
