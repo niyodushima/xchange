@@ -23,7 +23,6 @@ export default function VideoChat({ role = "viewer", username = "Guest" }) {
 
   return (
     <div className="vc-stage">
-      {/* ✅ Room join controls */}
       <div className="vc-controls">
         <input
           type="text"
@@ -35,48 +34,31 @@ export default function VideoChat({ role = "viewer", username = "Guest" }) {
           Join Room
         </button>
         {role === "host" && !callActive && (
-          <button className="primary" onClick={startCall}>
-            Start Call
-          </button>
+          <button className="primary" onClick={startCall}>Start Call</button>
         )}
         {callActive && (
-          <button className="primary" onClick={endCall}>
-            End Call
-          </button>
+          <button className="primary" onClick={endCall}>End Call</button>
         )}
       </div>
 
-      {/* ✅ Video area with watermark */}
       <div className="vc-videos">
         <div className="vc-video">
-          <div className="vc-watermark">
-            <img src="/xchange (1).png" alt="Xchange Watermark" />
-          </div>
-          <video ref={localVideoRef} autoPlay playsInline muted />
+          <video ref={localVideoRef} autoPlay muted playsInline />
           <span className="vc-label">Me</span>
         </div>
         <div className="vc-video">
-          <div className="vc-watermark">
-            <img src="/xchange (1).png" alt="Xchange Watermark" />
-          </div>
           <video ref={remoteVideoRef} autoPlay playsInline />
           <span className="vc-label">Remote</span>
           <HeartsOverlay onHeart={sendHeart} />
         </div>
       </div>
 
-      {/* ✅ Stats */}
       <div className="vc-stats">
         <span>⏱ {formattedTime()}</span>
         <span>👥 {viewerCount} viewers</span>
       </div>
 
-      {/* ✅ Chat */}
-      <ChatPanel
-        messages={messages}
-        sendMessage={sendChatMessage}
-        username={username}
-      />
+      <ChatPanel messages={messages} sendMessage={sendChatMessage} username={username} />
     </div>
   );
 }
