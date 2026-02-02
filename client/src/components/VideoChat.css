@@ -90,3 +90,12 @@
   padding: 10px;
   overflow-y: auto;
 }
+
+.vc-chat-message {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.vc-chat-message strong {
+  color: #ff3366;
+}
