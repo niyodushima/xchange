@@ -15,9 +15,8 @@ const app = express();
 app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
 app.use(express.json());
 
-// Health check
 app.get("/", (req, res) => {
-  res.send("✅ Zazza backend is running");
+  res.send("✅ Backend is running");
 });
 
 const server = http.createServer(app);
@@ -26,11 +25,10 @@ const io = new Server(server, {
   path: "/socket.io",
 });
 
-// In-memory room state
 const rooms = new Map();
 
 io.on("connection", (socket) => {
-  console.log("✅ Connected:", socket.id);
+  console.log("Connected:", socket.id);
 
   socket.on("join-room", ({ roomId, role, name }) => {
     if (!roomId || !role) return;
@@ -48,15 +46,11 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("viewer-count", existing.viewers.size);
   });
 
-  // WebRTC signaling relay
   socket.on("offer", ({ roomId, offer }) => {
     const room = rooms.get(roomId);
     if (!room || !offer) return;
-
     if (socket.id === room.host) {
-      room.viewers.forEach((viewerId) => {
-        io.to(viewerId).emit("offer", offer);
-      });
+      room.viewers.forEach((viewerId) => io.to(viewerId).emit("offer", offer));
     } else {
       if (room.host) io.to(room.host).emit("offer", offer);
     }
@@ -65,11 +59,8 @@ io.on("connection", (socket) => {
   socket.on("answer", ({ roomId, answer }) => {
     const room = rooms.get(roomId);
     if (!room || !answer) return;
-
     if (socket.id === room.host) {
-      room.viewers.forEach((viewerId) => {
-        io.to(viewerId).emit("answer", answer);
-      });
+      room.viewers.forEach((viewerId) => io.to(viewerId).emit("answer", answer));
     } else {
       if (room.host) io.to(room.host).emit("answer", answer);
     }
@@ -78,17 +69,13 @@ io.on("connection", (socket) => {
   socket.on("ice-candidate", ({ roomId, candidate }) => {
     const room = rooms.get(roomId);
     if (!room || !candidate) return;
-
     if (socket.id === room.host) {
-      room.viewers.forEach((viewerId) => {
-        io.to(viewerId).emit("ice-candidate", candidate);
-      });
+      room.viewers.forEach((viewerId) => io.to(viewerId).emit("ice-candidate", candidate));
     } else {
       if (room.host) io.to(room.host).emit("ice-candidate", candidate);
     }
   });
 
-  // Chat relay
   socket.on("chat-message", (msg) => {
     if (!msg || !msg.roomId) return;
     io.to(msg.roomId).emit("chat-message", msg);
@@ -120,7 +107,7 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("viewer-count", room.viewers.size);
       }
     }
-    console.log("❌ Disconnected:", socket.id);
+    console.log("Disconnected:", socket.id);
   });
 });
 
