@@ -1,102 +1,45 @@
-if (process.env.NODE_ENV !== "production") {
-  try {
-    require("dotenv").config();
-  } catch (err) {
-    console.warn("dotenv not installed in production, skipping...");
+// WebRTC signaling relay
+socket.on("offer", ({ roomId, offer }) => {
+  const room = rooms.get(roomId);
+  if (!room || !offer) return;
+
+  if (socket.id === room.host) {
+    // Host sends offer → forward to all viewers
+    room.viewers.forEach((viewerId) => {
+      io.to(viewerId).emit("offer", offer);
+    });
+  } else {
+    // Viewer sends offer → forward to host
+    if (room.host) io.to(room.host).emit("offer", offer);
   }
-}
-
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const cors = require("cors");
-
-const app = express();
-app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
-app.use(express.json());
-
-// Health check
-app.get("/", (req, res) => {
-  res.send("✅ Zazza backend is running");
 });
 
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] },
-  path: "/socket.io",
+socket.on("answer", ({ roomId, answer }) => {
+  const room = rooms.get(roomId);
+  if (!room || !answer) return;
+
+  if (socket.id === room.host) {
+    // Host sends answer → forward to all viewers
+    room.viewers.forEach((viewerId) => {
+      io.to(viewerId).emit("answer", answer);
+    });
+  } else {
+    // Viewer sends answer → forward to host
+    if (room.host) io.to(room.host).emit("answer", answer);
+  }
 });
 
-// In-memory room state
-const rooms = new Map();
+socket.on("ice-candidate", ({ roomId, candidate }) => {
+  const room = rooms.get(roomId);
+  if (!room || !candidate) return;
 
-io.on("connection", (socket) => {
-  console.log("✅ Connected:", socket.id);
-
-  socket.on("join-room", ({ roomId, role, name }) => {
-    if (!roomId || !role) return;
-    socket.join(roomId);
-
-    const existing = rooms.get(roomId) || { host: null, viewers: new Set() };
-    if (role === "host") {
-      existing.host = socket.id;
-    } else {
-      existing.viewers.add(socket.id);
-    }
-    rooms.set(roomId, existing);
-
-    io.to(socket.id).emit("room-joined", { roomId, role });
-    io.to(roomId).emit("viewer-count", existing.viewers.size);
-    // ❌ Removed system message broadcast
-  });
-
-  // WebRTC signaling relay
-  socket.on("offer", ({ roomId, offer }) => {
-    if (roomId && offer) socket.to(roomId).emit("offer", offer);
-  });
-  socket.on("answer", ({ roomId, answer }) => {
-    if (roomId && answer) socket.to(roomId).emit("answer", answer);
-  });
-  socket.on("ice-candidate", ({ roomId, candidate }) => {
-    if (roomId && candidate) socket.to(roomId).emit("ice-candidate", candidate);
-  });
-
-  // ✅ Chat relay
-  socket.on("chat-message", (msg) => {
-    if (!msg || !msg.roomId) return;
-    io.to(msg.roomId).emit("chat-message", msg);
-  });
-
-  // Hearts
-  socket.on("heart", ({ roomId }) => {
-    if (!roomId) return;
-    socket.to(roomId).emit("heart");
-  });
-
-  // Session time
-  socket.on("session-time", ({ roomId, seconds }) => {
-    if (!roomId) return;
-    io.to(roomId).emit("session-time", seconds);
-  });
-
-  socket.on("disconnect", () => {
-    for (const [roomId, room] of rooms.entries()) {
-      let changed = false;
-      if (room.host === socket.id) {
-        room.host = null;
-        changed = true;
-      }
-      if (room.viewers.has(socket.id)) {
-        room.viewers.delete(socket.id);
-        changed = true;
-      }
-      if (changed) {
-        rooms.set(roomId, room);
-        io.to(roomId).emit("viewer-count", room.viewers.size);
-      }
-    }
-    console.log("❌ Disconnected:", socket.id);
-  });
+  if (socket.id === room.host) {
+    // Host sends ICE → forward to all viewers
+    room.viewers.forEach((viewerId) => {
+      io.to(viewerId).emit("ice-candidate", candidate);
+    });
+  } else {
+    // Viewer sends ICE → forward to host
+    if (room.host) io.to(room.host).emit("ice-candidate", candidate);
+  }
 });
-
-const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
