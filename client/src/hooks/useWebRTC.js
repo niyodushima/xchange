@@ -98,7 +98,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   };
 
   // ... (rest of signaling logic unchanged)
-
+  const sendChatMessage = (text) => { ... }; const sendHeart = () => { ... }; const formattedTime = () => { ... }; const joinRoom = async (targetRoomId) => { ... }; const startCall = async () => { ... }; const endCall = () => { ... };
   return {
     localVideoRef,
     remoteVideoRef,
