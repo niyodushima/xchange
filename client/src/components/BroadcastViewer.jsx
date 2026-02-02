@@ -8,6 +8,7 @@ export default function BroadcastViewer({ username = "Viewer" }) {
   const {
     localVideoRef,
     remoteVideoRef,
+    remoteAudioRef, 
     messages,
     sendChatMessage,
     callActive,
@@ -42,6 +43,10 @@ export default function BroadcastViewer({ username = "Viewer" }) {
             muted   // ✅ ensures autoplay works without user gesture
             onLoadedMetadata={() => console.log("Remote video loaded (viewer)")}
             onPlay={() => console.log("Remote video playing (viewer)")}
+          />
+           {/* ✅ Remote audio element */}
+          <audio ref={remoteAudioRef} autoPlay playsInline controls={false} onLoadedMetadata={() => console.log("Remote audio loaded (viewer)")}
+            onPlay={() => console.log("Remote audio playing (viewer)")}
           />
           <div className="vc-label">
             {callActive ? "Host live" : "Waiting for host…"}
