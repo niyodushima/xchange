@@ -103,7 +103,9 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       }
       pcRef.current = createPeerConnection();
 
-      await startLocalVideoIfNotStarted();
+      // ✅ Viewer only starts local video when answering
+      if (role === "viewer") await startLocalVideoIfNotStarted();
+
       await pcRef.current.setRemoteDescription(offer);
 
       const answer = await pcRef.current.createAnswer();
@@ -162,7 +164,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   };
 
   const startCall = async () => {
-    if (!roomId) return;
+    if (!roomId || callActive) return; // ✅ prevent duplicate offers
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
