@@ -132,7 +132,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     });
 
     socket.on("answer", async (answer) => {
-      if (pcRef.current) {
+      if (pcRef.current && pcRef.current.signalingState === "have-local-offer") {
         await pcRef.current.setRemoteDescription(answer);
         setCallActive(true);
       }
