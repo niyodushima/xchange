@@ -39,7 +39,7 @@ export default function BroadcastViewer({ username = "Viewer" }) {
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            muted
+            muted   // ✅ ensures autoplay works without user gesture
             onLoadedMetadata={() => console.log("Remote video loaded (viewer)")}
             onPlay={() => console.log("Remote video playing (viewer)")}
           />
