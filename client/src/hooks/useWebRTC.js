@@ -26,8 +26,21 @@ export function useWebRTC(role = "viewer", username = "Guest") {
 
     pc.ontrack = (event) => {
       console.log("Remote track received:", event.track.kind);
-      remoteStreamRef.current.addTrack(event.track);
-      console.log("Remote stream tracks:", remoteStreamRef.current.getTracks().map(t => t.kind));
+
+      // ✅ Prevent duplicate remote tracks
+      const existingTracks = remoteStreamRef.current.getTracks();
+      if (!existingTracks.find((t) => t.id === event.track.id)) {
+        remoteStreamRef.current.addTrack(event.track);
+        console.log("Added new remote track:", event.track.kind);
+      } else {
+        console.log("Skipped duplicate remote track:", event.track.kind);
+      }
+
+      console.log(
+        "Remote stream tracks:",
+        remoteStreamRef.current.getTracks().map((t) => t.kind)
+      );
+
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStreamRef.current;
         console.log("Bound remote stream to video element");
@@ -60,6 +73,8 @@ export function useWebRTC(role = "viewer", username = "Guest") {
           if (!senders.includes(track)) {
             pcRef.current.addTrack(track, stream);
             console.log("Adding track:", track.kind);
+          } else {
+            console.log("Skipped duplicate local track:", track.kind);
           }
         });
       }
@@ -129,7 +144,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
 
     socket.on("chat-message", (msg) => setMessages((prev) => [...prev, msg]));
     socket.on("viewer-count", (count) => setViewerCount(count));
-        socket.on("session-time", (seconds) => {
+    socket.on("session-time", (seconds) => {
       if (role !== "host") setSecondsElapsed(seconds);
     });
 
