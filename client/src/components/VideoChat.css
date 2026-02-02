@@ -55,7 +55,7 @@
 
 .vc-video {
   position: relative;
-  flex: 1 1 50%;
+  flex: 1 1 50%; /* half width on desktop */
   max-width: 50%;
   background: #000;
   border-radius: 8px;
@@ -68,7 +68,7 @@
 .vc-video video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* ✅ fills container */
   border-radius: 8px;
 }
 
@@ -91,6 +91,7 @@
   border-top: 1px solid var(--border-color, #ddd);
 }
 
+/* Responsive video layout */
 @media (max-width: 768px) {
   .vc-videos {
     flex-direction: column;
@@ -98,12 +99,16 @@
   }
 
   .vc-video {
-    flex: 1 1 100%;
+    flex: 1 1 100%; /* full width on mobile */
     max-width: 100%;
-    height: 50%;
+    height: 50%; /* stack neatly */
   }
 
   .vc-video video {
     height: 100%;
+  }
+
+  .vc-watermark img {
+    max-width: 120px;
   }
 }
