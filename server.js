@@ -1,3 +1,34 @@
+if (process.env.NODE_ENV !== "production") {
+  try {
+    require("dotenv").config();
+  } catch (err) {
+    console.warn("dotenv not installed in production, skipping...");
+  }
+}
+
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
+
+const app = express();
+app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
+app.use(express.json());
+
+// Health check
+app.get("/", (req, res) => {
+  res.send("✅ Zazza backend is running");
+});
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*", methods: ["GET", "POST"] },
+  path: "/socket.io",
+});
+
+// In-memory room state
+const rooms = new Map();
+
 io.on("connection", (socket) => {
   console.log("✅ Connected:", socket.id);
 
@@ -69,11 +100,13 @@ io.on("connection", (socket) => {
     io.to(msg.roomId).emit("chat-message", msg);
   });
 
+  // Hearts
   socket.on("heart", ({ roomId }) => {
     if (!roomId) return;
     socket.to(roomId).emit("heart");
   });
 
+  // Session time
   socket.on("session-time", ({ roomId, seconds }) => {
     if (!roomId) return;
     io.to(roomId).emit("session-time", seconds);
@@ -98,3 +131,6 @@ io.on("connection", (socket) => {
     console.log("❌ Disconnected:", socket.id);
   });
 });
+
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
