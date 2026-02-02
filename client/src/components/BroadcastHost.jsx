@@ -20,17 +20,20 @@ export default function BroadcastHost({ username = "Host" }) {
   } = useWebRTC("host", username);
 
   useEffect(() => {
+    // Host joins the demo room once
     joinRoom("demo-room");
   }, [joinRoom]);
 
   return (
     <div className="vc-stage">
       <div className="vc-videos">
+        {/* Local camera */}
         <div className="vc-video">
           <video ref={localVideoRef} autoPlay muted playsInline />
           <div className="vc-label">🎥 {username} (You)</div>
         </div>
 
+        {/* Remote viewer camera */}
         <div className="vc-video">
           <video
             ref={remoteVideoRef}
