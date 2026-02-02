@@ -20,26 +20,23 @@ export default function BroadcastViewer({ username = "Viewer" }) {
   } = useWebRTC("viewer", username);
 
   useEffect(() => {
-    // Join the demo room on mount
     joinRoom("demo-room");
   }, [joinRoom]);
 
   return (
     <div className="vc-stage">
       <div className="vc-videos">
-        {/* Local camera */}
         <div className="vc-video">
           <video ref={localVideoRef} autoPlay muted playsInline />
           <div className="vc-label">🎥 {username} (You)</div>
         </div>
 
-        {/* Remote host camera */}
         <div className="vc-video">
           <video
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            muted   // ✅ ensures autoplay works without user gesture
+            muted
             onLoadedMetadata={() => console.log("Remote video loaded (viewer)")}
             onPlay={() => console.log("Remote video playing (viewer)")}
           />
