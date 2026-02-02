@@ -240,4 +240,6 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     startCall,
     endCall,
     viewerCount,
-    send
+    sendHeart,
+  };
+}
