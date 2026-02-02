@@ -23,6 +23,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const remoteStreamRef = useRef(new MediaStream());
   const socketRef = useRef(null);
   const pcRef = useRef(null);
+  const pendingCandidates = useRef([]);
 
   const [roomId, setRoomId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -71,21 +72,19 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const startLocalVideoIfNotStarted = async () => {
     if (localStreamRef.current) return localStreamRef.current;
     try {
-      const constraints = { video: true, audio: true };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
       if (pcRef.current) {
+        const senders = pcRef.current.getSenders().map((s) => s.track);
         stream.getTracks().forEach((track) => {
-          console.log("Adding track:", track.kind);
-          pcRef.current.addTrack(track, stream);
+          if (!senders.includes(track)) {
+            pcRef.current.addTrack(track, stream);
+            console.log("Adding track:", track.kind);
+          }
         });
       }
-
       return stream;
     } catch (err) {
       console.error("Media access failed:", err);
@@ -103,23 +102,33 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     socket.on("room-joined", async ({ roomId: joined }) => {
       setRoomId(joined);
       if (!pcRef.current) pcRef.current = createPeerConnection();
-
-      // ✅ If host, start local video immediately
-      if (role === "host") {
-        await startLocalVideoIfNotStarted();
-      }
+      if (role === "host") await startLocalVideoIfNotStarted();
     });
 
     socket.on("offer", async (offer) => {
-      if (!pcRef.current) pcRef.current = createPeerConnection();
+      if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+      }
+      pcRef.current = createPeerConnection();
 
       await startLocalVideoIfNotStarted();
-
       await pcRef.current.setRemoteDescription(offer);
+
       const answer = await pcRef.current.createAnswer();
       await pcRef.current.setLocalDescription(answer);
       socket.emit("answer", { roomId, answer });
       setCallActive(true);
+
+      // flush queued ICE
+      pendingCandidates.current.forEach(async (c) => {
+        try {
+          await pcRef.current.addIceCandidate(c);
+        } catch (err) {
+          console.warn("Bad ICE candidate:", err);
+        }
+      });
+      pendingCandidates.current = [];
     });
 
     socket.on("answer", async (answer) => {
@@ -130,10 +139,16 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     });
 
     socket.on("ice-candidate", async (candidate) => {
-      try {
-        await pcRef.current?.addIceCandidate(candidate);
-      } catch (err) {
-        console.warn("Bad ICE candidate:", err);
+      if (pcRef.current) {
+        if (pcRef.current.remoteDescription) {
+          try {
+            await pcRef.current.addIceCandidate(candidate);
+          } catch (err) {
+            console.warn("Bad ICE candidate:", err);
+          }
+        } else {
+          pendingCandidates.current.push(candidate);
+        }
       }
     });
 
@@ -154,15 +169,16 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     socketRef.current?.emit("join-room", { roomId: targetRoomId, role, name: username });
     setRoomId(targetRoomId);
     if (!pcRef.current) pcRef.current = createPeerConnection();
-
-    if (role === "host") {
-      await startLocalVideoIfNotStarted();
-    }
+    if (role === "host") await startLocalVideoIfNotStarted();
   };
 
   const startCall = async () => {
     if (!roomId) return;
-    if (!pcRef.current) pcRef.current = createPeerConnection();
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    pcRef.current = createPeerConnection();
 
     await startLocalVideoIfNotStarted();
 
@@ -190,6 +206,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     } catch {}
     pcRef.current = null;
     remoteStreamRef.current = new MediaStream();
+    pendingCandidates.current = [];
   };
 
   const sendChatMessage = (text) => {
