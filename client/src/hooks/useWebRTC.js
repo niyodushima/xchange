@@ -54,8 +54,10 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     pc.ontrack = (event) => {
       console.log("Remote track received:", event.track.kind);
       remoteStreamRef.current.addTrack(event.track);
+      console.log("Remote stream tracks:", remoteStreamRef.current.getTracks());
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        console.log("Bound remote stream to video element");
       }
     };
 
@@ -238,7 +240,4 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     startCall,
     endCall,
     viewerCount,
-    sendHeart,
-  };
-}
-    
+    send
