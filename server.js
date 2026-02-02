@@ -48,18 +48,16 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("viewer-count", existing.viewers.size);
   });
 
-  // ✅ WebRTC signaling relay
+  // WebRTC signaling relay
   socket.on("offer", ({ roomId, offer }) => {
     const room = rooms.get(roomId);
     if (!room || !offer) return;
 
     if (socket.id === room.host) {
-      // Host → forward to all viewers
       room.viewers.forEach((viewerId) => {
         io.to(viewerId).emit("offer", offer);
       });
     } else {
-      // Viewer → forward to host
       if (room.host) io.to(room.host).emit("offer", offer);
     }
   });
@@ -69,12 +67,10 @@ io.on("connection", (socket) => {
     if (!room || !answer) return;
 
     if (socket.id === room.host) {
-      // Host → forward to all viewers
       room.viewers.forEach((viewerId) => {
         io.to(viewerId).emit("answer", answer);
       });
     } else {
-      // Viewer → forward to host
       if (room.host) io.to(room.host).emit("answer", answer);
     }
   });
@@ -84,29 +80,25 @@ io.on("connection", (socket) => {
     if (!room || !candidate) return;
 
     if (socket.id === room.host) {
-      // Host → forward to all viewers
       room.viewers.forEach((viewerId) => {
         io.to(viewerId).emit("ice-candidate", candidate);
       });
     } else {
-      // Viewer → forward to host
       if (room.host) io.to(room.host).emit("ice-candidate", candidate);
     }
   });
 
-  // ✅ Chat relay
+  // Chat relay
   socket.on("chat-message", (msg) => {
     if (!msg || !msg.roomId) return;
     io.to(msg.roomId).emit("chat-message", msg);
   });
 
-  // Hearts
   socket.on("heart", ({ roomId }) => {
     if (!roomId) return;
     socket.to(roomId).emit("heart");
   });
 
-  // Session time
   socket.on("session-time", ({ roomId, seconds }) => {
     if (!roomId) return;
     io.to(roomId).emit("session-time", seconds);
