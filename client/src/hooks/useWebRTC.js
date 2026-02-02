@@ -57,34 +57,53 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     return pc;
   }, [roomId]);
 
-  const startLocalVideoIfNotStarted = async () => {
-    if (localStreamRef.current) return localStreamRef.current;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: true,
+const startLocalVideoIfNotStarted = async () => {
+  // ✅ If we already have a local stream, just ensure tracks are bound once
+  if (localStreamRef.current) {
+    if (pcRef.current) {
+      const senders = pcRef.current.getSenders().map(s => s.track);
+      localStreamRef.current.getTracks().forEach(track => {
+        if (!senders.includes(track)) {
+          pcRef.current.addTrack(track, localStreamRef.current);
+          console.log("Adding track:", track.kind);
+        } else {
+          console.log("Skipped duplicate local track:", track.kind);
+        }
       });
-      localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-
-      if (pcRef.current) {
-        const senders = pcRef.current.getSenders().map((s) => s.track);
-        stream.getTracks().forEach((track) => {
-          if (!senders.includes(track)) {
-            pcRef.current.addTrack(track, stream);
-            console.log("Adding track:", track.kind);
-          } else {
-            console.log("Skipped duplicate local track:", track.kind);
-          }
-        });
-      }
-      return stream;
-    } catch (err) {
-      console.error("Media access failed:", err);
-      alert("Media access failed: " + err.message);
-      return null;
     }
-  };
+    return localStreamRef.current;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true,
+    });
+    localStreamRef.current = stream;
+
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+    }
+
+    if (pcRef.current) {
+      const senders = pcRef.current.getSenders().map(s => s.track);
+      stream.getTracks().forEach(track => {
+        if (!senders.includes(track)) {
+          pcRef.current.addTrack(track, stream);
+          console.log("Adding track:", track.kind);
+        } else {
+          console.log("Skipped duplicate local track:", track.kind);
+        }
+      });
+    }
+    return stream;
+  } catch (err) {
+    console.error("Media access failed:", err);
+    alert("Media access failed: " + err.message);
+    return null;
+  }
+};
+
 
   useEffect(() => {
     const socket = io(SIGNALING_URL, { path: "/socket.io" });
@@ -163,26 +182,36 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     if (role === "host") await startLocalVideoIfNotStarted();
   };
 
-  const startCall = async () => {
-    if (!roomId || callActive) return; // ✅ prevent duplicate offers
-    if (pcRef.current) {
+const startCall = async () => {
+  // ✅ Prevent duplicate offers if a call is already active
+  if (!roomId || callActive) {
+    console.log("Call already active or no room joined, skipping startCall");
+    return;
+  }
+
+  if (pcRef.current) {
+    try {
       pcRef.current.close();
-      pcRef.current = null;
-    }
-    pcRef.current = createPeerConnection();
+    } catch {}
+    pcRef.current = null;
+  }
 
-    await startLocalVideoIfNotStarted();
+  pcRef.current = createPeerConnection();
 
-    const offer = await pcRef.current.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: true,
-    });
-    await pcRef.current.setLocalDescription(offer);
-    console.log("Local Description (offer):", pcRef.current.localDescription);
-    socketRef.current?.emit("offer", { roomId, offer });
-    setCallActive(true);
-    setSecondsElapsed(0);
-  };
+  await startLocalVideoIfNotStarted();
+
+  const offer = await pcRef.current.createOffer({
+    offerToReceiveAudio: true,
+    offerToReceiveVideo: true,
+  });
+  await pcRef.current.setLocalDescription(offer);
+  console.log("Local Description (offer):", pcRef.current.localDescription);
+
+  socketRef.current?.emit("offer", { roomId, offer });
+  setCallActive(true);
+  setSecondsElapsed(0);
+};
+
 
   const endCall = () => {
     setCallActive(false);
