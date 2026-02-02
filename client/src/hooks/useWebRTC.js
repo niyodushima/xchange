@@ -4,17 +4,7 @@ import { io } from "socket.io-client";
 const SIGNALING_URL =
   process.env.REACT_APP_SIGNALING_URL || "https://zazza-backend.onrender.com";
 
-const TURN_URLS = (process.env.REACT_APP_TURN_URLS || "")
-  .split(",")
-  .map((u) => u.trim())
-  .filter(Boolean);
-const TURN_USERNAME = process.env.REACT_APP_TURN_USERNAME || "";
-const TURN_CREDENTIAL = process.env.REACT_APP_TURN_CREDENTIAL || "";
-
-const iceServers =
-  TURN_URLS.length
-    ? [{ urls: TURN_URLS, username: TURN_USERNAME, credential: TURN_CREDENTIAL }]
-    : [{ urls: "stun:stun.l.google.com:19302" }];
+const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
 export function useWebRTC(role = "viewer", username = "Guest") {
   const localVideoRef = useRef(null);
@@ -31,30 +21,13 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const [callActive, setCallActive] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
 
-  // Host emits time; viewers mirror it.
-  useEffect(() => {
-    let interval;
-    if (callActive && role === "host") {
-      interval = setInterval(() => {
-        setSecondsElapsed((prev) => {
-          const next = prev + 1;
-          if (roomId) socketRef.current?.emit("session-time", { roomId, seconds: next });
-          return next;
-        });
-      }, 1000);
-    } else if (!callActive) {
-      setSecondsElapsed(0);
-    }
-    return () => clearInterval(interval);
-  }, [callActive, role, roomId]);
-
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection({ iceServers });
 
     pc.ontrack = (event) => {
       console.log("Remote track received:", event.track.kind);
       remoteStreamRef.current.addTrack(event.track);
-      console.log("Remote stream tracks:", remoteStreamRef.current.getTracks());
+      console.log("Remote stream tracks:", remoteStreamRef.current.getTracks().map(t => t.kind));
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStreamRef.current;
         console.log("Bound remote stream to video element");
@@ -74,7 +47,10 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const startLocalVideoIfNotStarted = async () => {
     if (localStreamRef.current) return localStreamRef.current;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: true,
+      });
       localStreamRef.current = stream;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
@@ -99,8 +75,6 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     const socket = io(SIGNALING_URL, { path: "/socket.io" });
     socketRef.current = socket;
 
-    const handleChat = (msg) => setMessages((prev) => [...prev, msg]);
-
     socket.on("room-joined", async ({ roomId: joined }) => {
       setRoomId(joined);
       if (!pcRef.current) pcRef.current = createPeerConnection();
@@ -122,7 +96,6 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       socket.emit("answer", { roomId, answer });
       setCallActive(true);
 
-      // flush queued ICE
       pendingCandidates.current.forEach(async (c) => {
         try {
           await pcRef.current.addIceCandidate(c);
@@ -154,14 +127,13 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       }
     });
 
-    socket.on("chat-message", handleChat);
+    socket.on("chat-message", (msg) => setMessages((prev) => [...prev, msg]));
     socket.on("viewer-count", (count) => setViewerCount(count));
-    socket.on("session-time", (seconds) => {
+        socket.on("session-time", (seconds) => {
       if (role !== "host") setSecondsElapsed(seconds);
     });
 
     return () => {
-      socket.off("chat-message", handleChat);
       socket.disconnect();
     };
   }, [role, roomId, createPeerConnection]);
@@ -228,7 +200,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     const s = (secondsElapsed % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
- 
+
   return {
     localVideoRef,
     remoteVideoRef,
