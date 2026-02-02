@@ -20,23 +20,28 @@ export default function BroadcastHost({ username = "Host" }) {
   } = useWebRTC("host", username);
 
   useEffect(() => {
+    // Join the demo room on mount
     joinRoom("demo-room");
   }, [joinRoom]);
 
   return (
     <div className="vc-stage">
       <div className="vc-videos">
+        {/* Local camera */}
         <div className="vc-video">
           <video ref={localVideoRef} autoPlay muted playsInline />
           <div className="vc-label">🎥 {username} (You)</div>
         </div>
+
+        {/* Remote viewer camera */}
         <div className="vc-video">
           <video
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            onLoadedMetadata={() => console.log("Remote video loaded")}
-            onPlay={() => console.log("Remote video playing")}
+            muted   // ✅ ensures autoplay works without user gesture
+            onLoadedMetadata={() => console.log("Remote video loaded (host)")}
+            onPlay={() => console.log("Remote video playing (host)")}
           />
           <div className="vc-label">
             {callActive ? "Viewer connected" : "Waiting for viewer…"}
@@ -52,7 +57,11 @@ export default function BroadcastHost({ username = "Host" }) {
         <div className="vc-stats">⏱ {formattedTime()} • 👥 {viewerCount}</div>
       </div>
 
-      <ChatPanel messages={messages} sendMessage={sendChatMessage} username={username} />
+      <ChatPanel
+        messages={messages}
+        sendMessage={sendChatMessage}
+        username={username}
+      />
     </div>
   );
 }
