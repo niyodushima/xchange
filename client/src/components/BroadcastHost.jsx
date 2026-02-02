@@ -8,6 +8,7 @@ export default function BroadcastHost({ username = "Host" }) {
   const {
     localVideoRef,
     remoteVideoRef,
+    remoteAudioRef,
     messages,
     sendChatMessage,
     callActive,
@@ -42,6 +43,10 @@ export default function BroadcastHost({ username = "Host" }) {
             muted
             onLoadedMetadata={() => console.log("Remote video loaded (host)")}
             onPlay={() => console.log("Remote video playing (host)")}
+          />
+          {/* ✅ Remote audio element */}
+          <audio ref={remoteAudioRef} autoPlay playsInline controls={false} onLoadedMetadata={() => console.log("Remote audio loaded (host)")}
+            onPlay={() => console.log("Remote audio playing (host)")}
           />
           <div className="vc-label">
             {callActive ? "Viewer connected" : "Waiting for viewer…"}
