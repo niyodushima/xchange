@@ -31,7 +31,13 @@ export default function BroadcastViewer({ username = "Viewer" }) {
           <div className="vc-label">🎥 {username} (You)</div>
         </div>
         <div className="vc-video">
-          <video ref={remoteVideoRef} autoPlay playsInline />
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            onLoadedMetadata={() => console.log("Remote video loaded")}
+            onPlay={() => console.log("Remote video playing")}
+          />
           <div className="vc-label">
             {callActive ? "Host live" : "Waiting for host…"}
           </div>
