@@ -2,23 +2,22 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   background: #111;
   color: #fff;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 .vc-videos {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  flex-wrap: wrap;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
   margin-bottom: 20px;
 }
 
@@ -28,9 +27,6 @@
   border: 2px solid #333;
   border-radius: 8px;
   overflow: hidden;
-  flex: 1 1 45%;
-  min-width: 300px;
-  max-width: 600px;
   aspect-ratio: 16 / 9;
   display: flex;
   align-items: center;
@@ -56,9 +52,10 @@
 
 .vc-controls {
   display: flex;
-  flex-direction: row;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
+  justify-content: center;
   margin-bottom: 20px;
 }
 
@@ -98,4 +95,29 @@
 
 .vc-chat-message strong {
   color: #ff3366;
+}
+
+/* ✅ Responsive tweaks */
+@media (max-width: 768px) {
+  .vc-videos {
+    grid-template-columns: 1fr;
+  }
+
+  .vc-video {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  .vc-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .vc-controls button.primary {
+    width: 100%;
+  }
+
+  .vc-chat {
+    max-width: 100%;
+  }
 }
