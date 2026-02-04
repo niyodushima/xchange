@@ -7,8 +7,7 @@ import "./VideoChat.css";
 export default function BroadcastViewer({ username = "Viewer" }) {
   const {
     localVideoRef,
-    remoteVideoRef,
-    remoteAudioRef, 
+    remoteStreams,   // ✅ array of remote streams
     messages,
     sendChatMessage,
     callActive,
@@ -34,24 +33,38 @@ export default function BroadcastViewer({ username = "Viewer" }) {
           <div className="vc-label">🎥 {username} (You)</div>
         </div>
 
-        {/* Remote host camera */}
-        <div className="vc-video">
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            muted   // ✅ ensures autoplay works without user gesture
-            onLoadedMetadata={() => console.log("Remote video loaded (viewer)")}
-            onPlay={() => console.log("Remote video playing (viewer)")}
-          />
-           {/* ✅ Remote audio element */}
-          <audio ref={remoteAudioRef} autoPlay playsInline controls={false} onLoadedMetadata={() => console.log("Remote audio loaded (viewer)")}
-            onPlay={() => console.log("Remote audio playing (viewer)")}
-          />
-          <div className="vc-label">
-            {callActive ? "Host live" : "Waiting for host…"}
-          </div>
-          <HeartsOverlay onHeart={sendHeart} />
+        {/* Render all remote participants */}
+        <div className="vc-remote-grid">
+          {remoteStreams.map((stream) => (
+            <div key={stream.id} className="vc-video">
+              <video
+                autoPlay
+                playsInline
+                muted   // keep muted for autoplay
+                ref={(el) => {
+                  if (el) el.srcObject = stream;
+                }}
+                onLoadedMetadata={() =>
+                  console.log("Remote video loaded (viewer)")
+                }
+                onPlay={() => console.log("Remote video playing (viewer)")}
+              />
+              <audio
+                autoPlay
+                playsInline
+                controls={false}
+                ref={(el) => {
+                  if (el) el.srcObject = stream;
+                }}
+                onLoadedMetadata={() =>
+                  console.log("Remote audio loaded (viewer)")
+                }
+                onPlay={() => console.log("Remote audio playing (viewer)")}
+              />
+              <div className="vc-label">Participant</div>
+              <HeartsOverlay onHeart={sendHeart} />
+            </div>
+          ))}
         </div>
       </div>
 
@@ -59,7 +72,9 @@ export default function BroadcastViewer({ username = "Viewer" }) {
         <button onClick={callActive ? endCall : startCall} className="primary">
           {callActive ? "Leave" : "Join Live"}
         </button>
-        <div className="vc-stats">⏱ {formattedTime()} • 👥 {viewerCount}</div>
+        <div className="vc-stats">
+          ⏱ {formattedTime()} • 👥 {viewerCount}
+        </div>
       </div>
 
       <ChatPanel
