@@ -7,17 +7,16 @@ import "./VideoChat.css";
 export default function BroadcastHost({ username = "Host" }) {
   const {
     localVideoRef,
-    remoteVideoRef,
-    remoteAudioRef,
+    remoteStreams,   // ✅ array of remote streams
     messages,
     sendChatMessage,
     callActive,
-    formattedTime,
     joinRoom,
+    viewerCount,
+    formattedTime,
+    sendHeart,
     startCall,
     endCall,
-    viewerCount,
-    sendHeart,
   } = useWebRTC("host", username);
 
   useEffect(() => {
@@ -28,30 +27,44 @@ export default function BroadcastHost({ username = "Host" }) {
   return (
     <div className="vc-stage">
       <div className="vc-videos">
-        {/* Local camera */}
+        {/* Host camera */}
         <div className="vc-video">
           <video ref={localVideoRef} autoPlay muted playsInline />
-          <div className="vc-label">🎥 {username} (You)</div>
+          <div className="vc-label">🎥 {username} (Host)</div>
         </div>
 
-        {/* Remote viewer camera */}
-        <div className="vc-video">
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            muted
-            onLoadedMetadata={() => console.log("Remote video loaded (host)")}
-            onPlay={() => console.log("Remote video playing (host)")}
-          />
-          {/* ✅ Remote audio element */}
-          <audio ref={remoteAudioRef} autoPlay playsInline controls={false} onLoadedMetadata={() => console.log("Remote audio loaded (host)")}
-            onPlay={() => console.log("Remote audio playing (host)")}
-          />
-          <div className="vc-label">
-            {callActive ? "Viewer connected" : "Waiting for viewer…"}
-          </div>
-          <HeartsOverlay onHeart={sendHeart} />
+        {/* Render all remote participants */}
+        <div className="vc-remote-grid">
+          {remoteStreams.map((stream) => (
+            <div key={stream.id} className="vc-video">
+              <video
+                autoPlay
+                playsInline
+                muted   // keep muted for autoplay
+                ref={(el) => {
+                  if (el) el.srcObject = stream;
+                }}
+                onLoadedMetadata={() =>
+                  console.log("Remote video loaded (host)")
+                }
+                onPlay={() => console.log("Remote video playing (host)")}
+              />
+              <audio
+                autoPlay
+                playsInline
+                controls={false}
+                ref={(el) => {
+                  if (el) el.srcObject = stream;
+                }}
+                onLoadedMetadata={() =>
+                  console.log("Remote audio loaded (host)")
+                }
+                onPlay={() => console.log("Remote audio playing (host)")}
+              />
+              <div className="vc-label">Viewer</div>
+              <HeartsOverlay onHeart={sendHeart} />
+            </div>
+          ))}
         </div>
       </div>
 
@@ -59,7 +72,9 @@ export default function BroadcastHost({ username = "Host" }) {
         <button onClick={callActive ? endCall : startCall} className="primary">
           {callActive ? "End Call" : "Start Call"}
         </button>
-        <div className="vc-stats">⏱ {formattedTime()} • 👥 {viewerCount}</div>
+        <div className="vc-stats">
+          ⏱ {formattedTime()} • 👥 {viewerCount}
+        </div>
       </div>
 
       <ChatPanel
