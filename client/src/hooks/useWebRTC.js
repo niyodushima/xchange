@@ -8,10 +8,7 @@ const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
 export function useWebRTC(role = "viewer", username = "Guest") {
   const localVideoRef = useRef(null);
-  const remoteVideoRef = useRef(null);
-  const remoteAudioRef = useRef(null);   // ✅ audio ref
   const localStreamRef = useRef(null);
-  const remoteStreamRef = useRef(new MediaStream());
   const socketRef = useRef(null);
   const pcRef = useRef(null);
   const pendingCandidates = useRef([]);
@@ -22,30 +19,23 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const [callActive, setCallActive] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
 
+  // ✅ Array of remote streams
+  const [remoteStreams, setRemoteStreams] = useState([]);
+
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection({ iceServers });
 
     pc.ontrack = (event) => {
       console.log("Remote track received:", event.track.kind);
+      const stream = event.streams[0];
 
-      const existingTracks = remoteStreamRef.current.getTracks();
-      if (!existingTracks.find((t) => t.id === event.track.id)) {
-        remoteStreamRef.current.addTrack(event.track);
-        console.log("Added new remote track:", event.track.kind);
-      }
-
-      // ✅ Bind audio separately
-      if (event.track.kind === "audio" && remoteAudioRef.current) {
-        const audioStream = new MediaStream([event.track]);
-        remoteAudioRef.current.srcObject = audioStream;
-        console.log("Bound remote audio to audio element");
-      }
-
-      // ✅ Bind video (muted for autoplay)
-      if (event.track.kind === "video" && remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
-        console.log("Bound remote video to video element");
-      }
+      setRemoteStreams((prev) => {
+        const exists = prev.find((s) => s.id === stream.id);
+        if (exists) {
+          return prev.map((s) => (s.id === stream.id ? stream : s));
+        }
+        return [...prev, stream];
+      });
     };
 
     pc.onicecandidate = (event) => {
@@ -154,7 +144,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     };
   }, [role, roomId, createPeerConnection]);
 
-  // ✅ Define all helpers before return
+  // ✅ Define helpers
   const joinRoom = async (targetRoomId) => {
     if (!targetRoomId) return;
     socketRef.current?.emit("join-room", { roomId: targetRoomId, role, name: username });
@@ -186,12 +176,10 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     localStreamRef.current = null;
 
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
-    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+    setRemoteStreams([]);
 
     try { pcRef.current?.close(); } catch {}
     pcRef.current = null;
-    remoteStreamRef.current = new MediaStream();
     pendingCandidates.current = [];
   };
 
@@ -216,8 +204,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   // ✅ Return everything
   return {
     localVideoRef,
-    remoteVideoRef,
-    remoteAudioRef,
+    remoteStreams,   // array of remote streams
     messages,
     sendChatMessage,
     callActive,
