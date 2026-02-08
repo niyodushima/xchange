@@ -19,7 +19,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const [callActive, setCallActive] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
 
-  // ✅ Array of remote streams
+  // ✅ Array of remote streams (merged audio+video per peer)
   const [remoteStreams, setRemoteStreams] = useState([]);
 
   const createPeerConnection = useCallback(() => {
@@ -29,12 +29,12 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       console.log("Remote track received:", event.track.kind);
       const stream = event.streams[0];
 
+      // Deduplicate: only add once per peer
       setRemoteStreams((prev) => {
-        const exists = prev.find((s) => s.id === stream.id);
-        if (exists) {
-          return prev.map((s) => (s.id === stream.id ? stream : s));
+        if (!prev.find((s) => s.id === stream.id)) {
+          return [...prev, stream];
         }
-        return [...prev, stream];
+        return prev;
       });
     };
 
@@ -144,7 +144,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     };
   }, [role, roomId, createPeerConnection]);
 
-  // ✅ Define helpers
+  // ✅ Helpers
   const joinRoom = async (targetRoomId) => {
     if (!targetRoomId) return;
     socketRef.current?.emit("join-room", { roomId: targetRoomId, role, name: username });
@@ -201,10 +201,9 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     return `${m}:${s}`;
   };
 
-  // ✅ Return everything
   return {
     localVideoRef,
-    remoteStreams,   // array of remote streams
+    remoteStreams,   // ✅ merged audio+video per peer
     messages,
     sendChatMessage,
     callActive,
