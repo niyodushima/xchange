@@ -1,17 +1,18 @@
 import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 
 import BroadcastHost from "./components/BroadcastHost";
 import BroadcastViewer from "./components/BroadcastViewer";
 import VideoChat from "./components/VideoChat";
+import SignUp from "./components/SignUp";
+import Login from "./components/Login";
 
-export default function App() {
+function Shell({ isAuthenticated, setIsAuthenticated }) {
   const location = useLocation();
   const navigate = useNavigate();
 
   const path = location.pathname;
-
   const current =
     path === "/learn" ? "learn" :
     path === "/teach" ? "teach" :
@@ -24,12 +25,9 @@ export default function App() {
 
         {/* ✅ NAVBAR */}
         <header className="app-nav">
-
-          {/* ✅ LEFT SIDE — LOGO + BRAND */}
           <div className="app-nav-left">
             <div className="app-title-block">
               <div className="app-title-row">
-                {/* ✅ Use logo from public folder */}
                 <img
                   src="/xchange (1).png"
                   alt="Xchange Logo"
@@ -43,7 +41,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* ✅ RIGHT SIDE — NAV BUTTONS */}
           <div className="app-nav-right">
             <button
               className={`app-nav-button ${current === "learn" ? "active" : ""}`}
@@ -68,8 +65,17 @@ export default function App() {
               <span className="icon">💰</span>
               <span>Profile</span>
             </button>
-          </div>
 
+            {isAuthenticated && (
+              <button
+                className="app-nav-button"
+                onClick={() => setIsAuthenticated(false)}
+              >
+                <span className="icon">🚪</span>
+                <span>Logout</span>
+              </button>
+            )}
+          </div>
         </header>
 
         {/* ✅ MAIN CONTENT */}
@@ -78,8 +84,44 @@ export default function App() {
           {current === "teach" && <BroadcastHost />}
           {current === "profile" && <VideoChat />}
         </main>
-
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+
+  const handleSignUp = (data) => {
+    console.log("Sign up:", data);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogin = (data) => {
+    console.log("Login:", data);
+    setIsAuthenticated(true);
+  };
+
+  return (
+    <Router>
+      <Routes>
+        {/* Default route → SignUp */}
+        <Route path="/" element={<SignUp onSubmit={handleSignUp} />} />
+        <Route path="/signup" element={<SignUp onSubmit={handleSignUp} />} />
+        <Route path="/login" element={<Login onSubmit={handleLogin} />} />
+
+        {/* Protected shell */}
+        <Route
+          path="/*"
+          element={
+            isAuthenticated ? (
+              <Shell isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
