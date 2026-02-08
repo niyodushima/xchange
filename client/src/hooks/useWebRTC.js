@@ -26,12 +26,13 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     const pc = new RTCPeerConnection({ iceServers });
 
     pc.ontrack = (event) => {
-      console.log("Remote track received:", event.track.kind);
       const stream = event.streams[0];
+      console.log("Remote track received:", event.track.kind);
 
       // Deduplicate: only add once per peer
       setRemoteStreams((prev) => {
         if (!prev.find((s) => s.id === stream.id)) {
+          console.log("Adding new remote stream:", stream.id);
           return [...prev, stream];
         }
         return prev;
@@ -50,9 +51,9 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const startLocalVideoIfNotStarted = async () => {
     if (localStreamRef.current) {
       if (pcRef.current) {
-        const senders = pcRef.current.getSenders().map((s) => s.track);
         localStreamRef.current.getTracks().forEach((track) => {
-          if (!senders.includes(track)) {
+          const alreadyAdded = pcRef.current.getSenders().some((s) => s.track === track);
+          if (!alreadyAdded) {
             pcRef.current.addTrack(track, localStreamRef.current);
             console.log("Adding track:", track.kind);
           }
@@ -72,8 +73,11 @@ export function useWebRTC(role = "viewer", username = "Guest") {
 
       if (pcRef.current) {
         stream.getTracks().forEach((track) => {
-          pcRef.current.addTrack(track, stream);
-          console.log("Adding track:", track.kind);
+          const alreadyAdded = pcRef.current.getSenders().some((s) => s.track === track);
+          if (!alreadyAdded) {
+            pcRef.current.addTrack(track, stream);
+            console.log("Adding track:", track.kind);
+          }
         });
       }
       return stream;
