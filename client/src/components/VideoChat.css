@@ -97,26 +97,17 @@
   color: #ff3366;
 }
 
-/* ✅ Responsive tweaks */
 @media (max-width: 768px) {
   .vc-videos {
     grid-template-columns: 1fr;
   }
-
-  .vc-video {
-    min-width: 100%;
-    max-width: 100%;
-  }
-
   .vc-controls {
     flex-direction: column;
     gap: 8px;
   }
-
   .vc-controls button.primary {
     width: 100%;
   }
-
   .vc-chat {
     max-width: 100%;
   }
