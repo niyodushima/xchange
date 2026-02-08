@@ -35,4 +35,35 @@ export default function BroadcastViewer({ username = "Viewer" }) {
         {/* Remote participants */}
         <div className="vc-remote-grid">
           {remoteStreams.map((stream) => (
-            <div
+            <div key={stream.id} className="vc-video">
+              <video
+                autoPlay
+                playsInline
+                ref={(el) => {
+                  if (el) el.srcObject = stream;
+                }}
+              />
+              <div className="vc-label">Participant</div>
+              <HeartsOverlay onHeart={sendHeart} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="vc-controls">
+        <button onClick={callActive ? endCall : startCall} className="primary">
+          {callActive ? "Leave" : "Join Live"}
+        </button>
+        <div className="vc-stats">
+          ⏱ {formattedTime()} • 👥 {viewerCount}
+        </div>
+      </div>
+
+      <ChatPanel
+        messages={messages}
+        sendMessage={sendChatMessage}
+        username={username}
+      />
+    </div>
+  );
+}
