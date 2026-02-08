@@ -7,7 +7,7 @@ import "./VideoChat.css";
 export default function BroadcastHost({ username = "Host" }) {
   const {
     localVideoRef,
-    remoteStreams,   // ✅ array of remote streams
+    remoteStreams,
     messages,
     sendChatMessage,
     callActive,
@@ -20,7 +20,6 @@ export default function BroadcastHost({ username = "Host" }) {
   } = useWebRTC("host", username);
 
   useEffect(() => {
-    // Host joins the demo room once
     joinRoom("demo-room");
   }, [joinRoom]);
 
@@ -33,33 +32,16 @@ export default function BroadcastHost({ username = "Host" }) {
           <div className="vc-label">🎥 {username} (Host)</div>
         </div>
 
-        {/* Render all remote participants */}
+        {/* Remote participants */}
         <div className="vc-remote-grid">
           {remoteStreams.map((stream) => (
             <div key={stream.id} className="vc-video">
               <video
                 autoPlay
                 playsInline
-                muted   // keep muted for autoplay
                 ref={(el) => {
                   if (el) el.srcObject = stream;
                 }}
-                onLoadedMetadata={() =>
-                  console.log("Remote video loaded (host)")
-                }
-                onPlay={() => console.log("Remote video playing (host)")}
-              />
-              <audio
-                autoPlay
-                playsInline
-                controls={false}
-                ref={(el) => {
-                  if (el) el.srcObject = stream;
-                }}
-                onLoadedMetadata={() =>
-                  console.log("Remote audio loaded (host)")
-                }
-                onPlay={() => console.log("Remote audio playing (host)")}
               />
               <div className="vc-label">Viewer</div>
               <HeartsOverlay onHeart={sendHeart} />
