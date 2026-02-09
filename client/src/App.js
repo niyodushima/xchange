@@ -8,6 +8,14 @@ import VideoChat from "./components/VideoChat";
 import SignUp from "./components/SignUp";
 import Login from "./components/Login";
 
+/* ✅ ProtectedRoute helper */
+function ProtectedRoute({ isAuthenticated, children }) {
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
 function Shell({ isAuthenticated, setIsAuthenticated }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -113,7 +121,7 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Default route → SignUp */}
+      {/* Public routes */}
       <Route path="/" element={<SignUp onSubmit={handleSignUp} />} />
       <Route path="/signup" element={<SignUp onSubmit={handleSignUp} />} />
       <Route path="/login" element={<Login onSubmit={handleLogin} />} />
@@ -122,14 +130,12 @@ export default function App() {
       <Route
         path="/*"
         element={
-          isAuthenticated ? (
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
             <Shell
               isAuthenticated={isAuthenticated}
               setIsAuthenticated={setIsAuthenticated}
             />
-          ) : (
-            <Navigate to="/login" />
-          )
+          </ProtectedRoute>
         }
       />
     </Routes>
