@@ -19,20 +19,19 @@ export function useWebRTC(role = "viewer", username = "Guest") {
   const [callActive, setCallActive] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
 
-  // ✅ Array of remote streams (merged audio+video per peer)
+  // ✅ Remote streams
   const [remoteStreams, setRemoteStreams] = useState([]);
+
+  // ✅ Reactions state (for floating emojis)
+  const [reactions, setReactions] = useState([]);
 
   const createPeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection({ iceServers });
 
     pc.ontrack = (event) => {
       const stream = event.streams[0];
-      console.log("Remote track received:", event.track.kind);
-
-      // Deduplicate: only add once per peer
       setRemoteStreams((prev) => {
         if (!prev.find((s) => s.id === stream.id)) {
-          console.log("Adding new remote stream:", stream.id);
           return [...prev, stream];
         }
         return prev;
@@ -53,10 +52,7 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       if (pcRef.current) {
         localStreamRef.current.getTracks().forEach((track) => {
           const alreadyAdded = pcRef.current.getSenders().some((s) => s.track === track);
-          if (!alreadyAdded) {
-            pcRef.current.addTrack(track, localStreamRef.current);
-            console.log("Adding track:", track.kind);
-          }
+          if (!alreadyAdded) pcRef.current.addTrack(track, localStreamRef.current);
         });
       }
       return localStreamRef.current;
@@ -68,16 +64,11 @@ export function useWebRTC(role = "viewer", username = "Guest") {
         audio: true,
       });
       localStreamRef.current = stream;
-
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-
       if (pcRef.current) {
         stream.getTracks().forEach((track) => {
           const alreadyAdded = pcRef.current.getSenders().some((s) => s.track === track);
-          if (!alreadyAdded) {
-            pcRef.current.addTrack(track, stream);
-            console.log("Adding track:", track.kind);
-          }
+          if (!alreadyAdded) pcRef.current.addTrack(track, stream);
         });
       }
       return stream;
@@ -99,24 +90,15 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     });
 
     socket.on("offer", async (offer) => {
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
+      if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
       pcRef.current = createPeerConnection();
-
       if (role === "viewer") await startLocalVideoIfNotStarted();
-
       await pcRef.current.setRemoteDescription(offer);
-
       const answer = await pcRef.current.createAnswer();
       await pcRef.current.setLocalDescription(answer);
       socket.emit("answer", { roomId, answer });
       setCallActive(true);
-
-      pendingCandidates.current.forEach(async (c) => {
-        try { await pcRef.current.addIceCandidate(c); } catch {}
-      });
+      pendingCandidates.current.forEach(async (c) => { try { await pcRef.current.addIceCandidate(c); } catch {} });
       pendingCandidates.current = [];
     });
 
@@ -137,7 +119,13 @@ export function useWebRTC(role = "viewer", username = "Guest") {
       }
     });
 
+    // ✅ Chat + reactions
     socket.on("chat-message", (msg) => setMessages((prev) => [...prev, msg]));
+    socket.on("reaction", (reaction) => {
+      // reaction = { roomId, user, emoji, timestamp }
+      setReactions((prev) => [...prev, reaction]);
+    });
+
     socket.on("viewer-count", (count) => setViewerCount(count));
     socket.on("session-time", (seconds) => {
       if (role !== "host") setSecondsElapsed(seconds);
@@ -161,13 +149,8 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     if (!roomId || callActive) return;
     if (pcRef.current) { try { pcRef.current.close(); } catch {}; pcRef.current = null; }
     pcRef.current = createPeerConnection();
-
     await startLocalVideoIfNotStarted();
-
-    const offer = await pcRef.current.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: true,
-    });
+    const offer = await pcRef.current.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
     await pcRef.current.setLocalDescription(offer);
     socketRef.current?.emit("offer", { roomId, offer });
     setCallActive(true);
@@ -178,10 +161,8 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     setCallActive(false);
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
-
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     setRemoteStreams([]);
-
     try { pcRef.current?.close(); } catch {}
     pcRef.current = null;
     pendingCandidates.current = [];
@@ -194,9 +175,12 @@ export function useWebRTC(role = "viewer", username = "Guest") {
     socketRef.current?.emit("chat-message", msg);
   };
 
-  const sendHeart = () => {
+  // ✅ Generalized sendReaction
+  const sendReaction = (emoji) => {
     if (!roomId) return;
-    socketRef.current?.emit("heart", { roomId });
+    const reaction = { roomId, user: username, emoji, timestamp: Date.now() };
+    socketRef.current?.emit("reaction", reaction);
+    setReactions((prev) => [...prev, reaction]); // show locally too
   };
 
   const formattedTime = () => {
@@ -207,15 +191,16 @@ export function useWebRTC(role = "viewer", username = "Guest") {
 
   return {
     localVideoRef,
-    remoteStreams,   // ✅ merged audio+video per peer
+    remoteStreams,
     messages,
+    reactions,        // ✅ expose reactions
     sendChatMessage,
+    sendReaction,     // ✅ expose sendReaction
     callActive,
     formattedTime,
     joinRoom,
     startCall,
     endCall,
     viewerCount,
-    sendHeart,
   };
 }
