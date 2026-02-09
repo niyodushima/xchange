@@ -1,35 +1,29 @@
-/* Root layout */
 .app-root {
   min-height: 100vh;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  background: var(--bg-color, #fafafa);
-  color: var(--text-color, #222);
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .app-root {
-    --bg-color: #121212;
-    --text-color: #f0f0f0;
-  }
+  background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+  color: #fff;
+  font-family: "Inter", sans-serif;
 }
 
 .app-shell {
-  flex: 1;
-  max-width: 1200px;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
 }
 
-/* Navbar */
+/* ✅ NAVBAR */
 .app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  border-bottom: 1px solid var(--border-color, #ddd);
+  padding: 14px 28px;
+  background: rgba(34, 34, 34, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
 .app-title-block {
@@ -40,69 +34,66 @@
 .app-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .app-title-logo {
-  height: 32px;
+  height: 36px;
   width: auto;
 }
 
 .app-title {
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 600;
+  color: #ff3366;
 }
 
 .app-subtitle {
-  font-size: 0.85rem;
-  color: var(--text-color, #555);
+  font-size: 13px;
+  color: #aaa;
 }
 
-/* Nav buttons */
+/* ✅ NAV BUTTONS */
 .app-nav-right {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 .app-nav-button {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
   border: none;
-  border-radius: 6px;
-  background: transparent;
+  background: #222;
+  color: #fff;
+  font-size: 14px;
   cursor: pointer;
-  font-size: 0.9rem;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-nav-button .icon {
+  font-size: 16px;
+}
+
+.app-nav-button:hover {
+  background: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.4);
 }
 
 .app-nav-button.active {
-  background: #007bff;
+  background: #ff3366;
   color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.6);
 }
 
+/* ✅ MAIN PANEL */
 .app-main-panel {
   flex: 1;
+  padding: 24px;
   display: flex;
-  flex-direction: column;
-  padding: 12px;
-  overflow-y: auto;
-}
-
-/* ✅ Responsive adjustments */
-@media (max-width: 768px) {
-  .app-nav {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .app-nav-right {
-    width: 100%;
-    justify-content: space-around;
-  }
-
-  .app-main-panel {
-    padding: 8px;
-  }
+  justify-content: center;
+  align-items: flex-start;
 }
