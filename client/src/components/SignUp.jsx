@@ -8,12 +8,10 @@ export default function SignUp({ onSubmit }) {
     password: "",
     confirmPassword: "",
   });
-
   const [error, setError] = useState("");
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -28,18 +26,13 @@ export default function SignUp({ onSubmit }) {
       return;
     }
 
-    // ✅ Call parent handler or backend API
-    if (onSubmit) {
-      onSubmit(formData);
-    } else {
-      console.log("Sign up data:", formData);
-    }
+    onSubmit?.(formData);
   };
 
   return (
-    <div className="signup-container">
+    <div className="auth-container">
       <h2>Create Account</h2>
-      <form onSubmit={handleSubmit} className="signup-form">
+      <form onSubmit={handleSubmit} className="auth-form">
         <input
           type="text"
           name="username"
@@ -73,7 +66,7 @@ export default function SignUp({ onSubmit }) {
 
         <button type="submit" className="primary">Sign Up</button>
       </form>
-      <p className="login-link">
+      <p className="auth-link">
         Already have an account? <a href="/login">Log in</a>
       </p>
     </div>
