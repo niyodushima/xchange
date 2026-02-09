@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useWebRTC } from "../hooks/useWebRTC";
 import ChatPanel from "./ChatPanel";
-import HeartsOverlay from "./HeartsOverlay";
+import ReactionsOverlay from "./ReactionsOverlay";   // ✅ updated import
 import "./VideoChat.css";
 
 export default function BroadcastViewer({ username = "Viewer" }) {
@@ -14,7 +14,7 @@ export default function BroadcastViewer({ username = "Viewer" }) {
     joinRoom,
     viewerCount,
     formattedTime,
-    sendHeart,
+    sendHeart,   // you can rename this in your hook to sendReaction if you want
     startCall,
     endCall,
   } = useWebRTC("viewer", username);
@@ -44,7 +44,8 @@ export default function BroadcastViewer({ username = "Viewer" }) {
                 }}
               />
               <div className="vc-label">Participant</div>
-              <HeartsOverlay onHeart={sendHeart} />
+              {/* ✅ Multi‑emoji reactions overlay */}
+              <ReactionsOverlay onReact={sendHeart} />
             </div>
           ))}
         </div>
