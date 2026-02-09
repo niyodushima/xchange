@@ -9,12 +9,13 @@ export default function BroadcastHost({ username = "Host" }) {
     localVideoRef,
     remoteStreams,
     messages,
+    reactions,        // ✅ now available from hook
     sendChatMessage,
     callActive,
     joinRoom,
     viewerCount,
     formattedTime,
-    sendHeart,   // you can rename this in your hook to sendReaction if you want
+    sendReaction,     // ✅ generalized reaction sender
     startCall,
     endCall,
   } = useWebRTC("host", username);
@@ -45,7 +46,7 @@ export default function BroadcastHost({ username = "Host" }) {
               />
               <div className="vc-label">Viewer</div>
               {/* ✅ Multi‑emoji reactions overlay */}
-              <ReactionsOverlay onReact={sendHeart} />
+              <ReactionsOverlay onReact={sendReaction} reactions={reactions} />
             </div>
           ))}
         </div>
