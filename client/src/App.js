@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 
 import BroadcastHost from "./components/BroadcastHost";
@@ -119,28 +112,26 @@ export default function App() {
   };
 
   return (
-    <Router>
-      <Routes>
-        {/* Default route → SignUp */}
-        <Route path="/" element={<SignUp onSubmit={handleSignUp} />} />
-        <Route path="/signup" element={<SignUp onSubmit={handleSignUp} />} />
-        <Route path="/login" element={<Login onSubmit={handleLogin} />} />
+    <Routes>
+      {/* Default route → SignUp */}
+      <Route path="/" element={<SignUp onSubmit={handleSignUp} />} />
+      <Route path="/signup" element={<SignUp onSubmit={handleSignUp} />} />
+      <Route path="/login" element={<Login onSubmit={handleLogin} />} />
 
-        {/* Protected shell */}
-        <Route
-          path="/*"
-          element={
-            isAuthenticated ? (
-              <Shell
-                isAuthenticated={isAuthenticated}
-                setIsAuthenticated={setIsAuthenticated}
-              />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-      </Routes>
-    </Router>
+      {/* Protected shell */}
+      <Route
+        path="/*"
+        element={
+          isAuthenticated ? (
+            <Shell
+              isAuthenticated={isAuthenticated}
+              setIsAuthenticated={setIsAuthenticated}
+            />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      />
+    </Routes>
   );
 }
