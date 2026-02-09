@@ -1,5 +1,12 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import "./App.css";
 
 import BroadcastHost from "./components/BroadcastHost";
@@ -14,15 +21,17 @@ function Shell({ isAuthenticated, setIsAuthenticated }) {
 
   const path = location.pathname;
   const current =
-    path === "/learn" ? "learn" :
-    path === "/teach" ? "teach" :
-    path === "/profile" ? "profile" :
-    "learn";
+    path === "/learn"
+      ? "learn"
+      : path === "/teach"
+      ? "teach"
+      : path === "/profile"
+      ? "profile"
+      : "learn";
 
   return (
     <div className="app-root">
       <div className="app-shell">
-
         {/* ✅ NAVBAR */}
         <header className="app-nav">
           <div className="app-nav-left">
@@ -69,7 +78,10 @@ function Shell({ isAuthenticated, setIsAuthenticated }) {
             {isAuthenticated && (
               <button
                 className="app-nav-button"
-                onClick={() => setIsAuthenticated(false)}
+                onClick={() => {
+                  setIsAuthenticated(false);
+                  localStorage.removeItem("auth");
+                }}
               >
                 <span className="icon">🚪</span>
                 <span>Logout</span>
@@ -90,16 +102,20 @@ function Shell({ isAuthenticated, setIsAuthenticated }) {
 }
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(
+    () => localStorage.getItem("auth") === "true"
+  );
 
   const handleSignUp = (data) => {
     console.log("Sign up:", data);
     setIsAuthenticated(true);
+    localStorage.setItem("auth", "true");
   };
 
   const handleLogin = (data) => {
     console.log("Login:", data);
     setIsAuthenticated(true);
+    localStorage.setItem("auth", "true");
   };
 
   return (
@@ -115,7 +131,10 @@ export default function App() {
           path="/*"
           element={
             isAuthenticated ? (
-              <Shell isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
+              <Shell
+                isAuthenticated={isAuthenticated}
+                setIsAuthenticated={setIsAuthenticated}
+              />
             ) : (
               <Navigate to="/login" />
             )
