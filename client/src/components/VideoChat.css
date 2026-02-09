@@ -1,9 +1,10 @@
+/* ✅ Stage container */
 .vc-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  background: #111;
+  background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
   color: #fff;
   height: 100vh;
   width: 100vw;
@@ -12,6 +13,7 @@
   box-sizing: border-box;
 }
 
+/* ✅ Video grid */
 .vc-videos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -21,16 +23,20 @@
   margin-bottom: 20px;
 }
 
+/* ✅ Video tile */
 .vc-video {
   position: relative;
-  background: #000;
-  border: 2px solid #333;
-  border-radius: 8px;
+  background: rgba(34, 34, 34, 0.85);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
   overflow: hidden;
   aspect-ratio: 16 / 9;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  animation: fadeIn 0.6s ease;
 }
 
 .vc-video video {
@@ -38,22 +44,27 @@
   height: 100%;
   object-fit: cover;
   background: #000;
+  border-radius: 16px;
 }
 
+/* ✅ Labels */
 .vc-label {
   position: absolute;
-  bottom: 8px;
-  left: 8px;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 4px 8px;
-  border-radius: 4px;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 12px;
+  border-radius: 8px;
   font-size: 14px;
+  font-weight: 500;
+  color: #fff;
 }
 
+/* ✅ Controls */
 .vc-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
   justify-content: center;
   margin-bottom: 20px;
@@ -63,15 +74,17 @@
   background: #ff3366;
   color: #fff;
   border: none;
-  border-radius: 6px;
-  padding: 10px 20px;
+  border-radius: 12px;
+  padding: 12px 24px;
   font-size: 16px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .vc-controls button.primary:hover {
   background: #ff5588;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.4);
 }
 
 .vc-stats {
@@ -79,17 +92,19 @@
   color: #ccc;
 }
 
+/* ✅ Chat panel */
 .vc-chat {
   width: 100%;
   max-width: 600px;
-  background: #222;
-  border-radius: 8px;
-  padding: 10px;
+  background: rgba(34,34,34,0.85);
+  border-radius: 16px;
+  padding: 16px;
   overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
 
 .vc-chat-message {
-  margin: 4px 0;
+  margin: 6px 0;
   font-size: 14px;
 }
 
@@ -97,13 +112,14 @@
   color: #ff3366;
 }
 
+/* ✅ Responsive */
 @media (max-width: 768px) {
   .vc-videos {
     grid-template-columns: 1fr;
   }
   .vc-controls {
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
   .vc-controls button.primary {
     width: 100%;
@@ -111,4 +127,10 @@
   .vc-chat {
     max-width: 100%;
   }
+}
+
+/* ✅ Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
