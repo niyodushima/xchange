@@ -22,11 +22,8 @@ export default function Login({ onSubmit }) {
       return;
     }
 
-    // ✅ Call parent handler or backend API
     if (onSubmit) {
       onSubmit(formData);
-    } else {
-      console.log("Login data:", formData);
     }
   };
 
