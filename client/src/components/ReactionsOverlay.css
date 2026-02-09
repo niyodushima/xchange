@@ -1,0 +1,44 @@
+.reactions-overlay {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.reaction-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.reaction-button {
+  background: rgba(255, 51, 102, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.reaction-button:hover {
+  background: #ff5588;
+  transform: scale(1.1);
+}
+
+.reaction-float {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  font-size: 26px;
+  animation: floatUp 2s ease forwards;
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  50% { transform: translateY(-40px) scale(1.2); opacity: 0.8; }
+  100% { transform: translateY(-80px) scale(0.8); opacity: 0; }
+}
