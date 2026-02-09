@@ -1,39 +1,26 @@
-// src/components/HeartsOverlay.jsx
-import React, { useEffect, useRef } from "react";
+import React, { useState } from "react";
 import "./HeartsOverlay.css";
 
 export default function HeartsOverlay({ onHeart }) {
-  const containerRef = useRef(null);
+  const [hearts, setHearts] = useState([]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const onRemoteHeart = () => spawnHeart(container);
-    window.addEventListener("x-heart", onRemoteHeart);
-    return () => window.removeEventListener("x-heart", onRemoteHeart);
-  }, []);
+  const triggerHeart = () => {
+    const id = Date.now();
+    setHearts((prev) => [...prev, id]);
+    onHeart?.();
 
-  const spawnHeart = (container) => {
-    const heart = document.createElement("div");
-    heart.className = "heart";
-    heart.style.left = Math.random() * 80 + "%";
-    container.appendChild(heart);
-    setTimeout(() => container.removeChild(heart), 2000);
+    // Remove after animation
+    setTimeout(() => {
+      setHearts((prev) => prev.filter((h) => h !== id));
+    }, 2000);
   };
 
   return (
-    <div className="hearts" ref={containerRef}>
-      <button
-        className="heart-button"
-        onClick={() => {
-          onHeart?.();
-          const evt = new Event("x-heart");
-          window.dispatchEvent(evt); // local echo
-        }}
-        title="Send heart"
-      >
-        ❤️
-      </button>
+    <div className="hearts-overlay">
+      <button className="heart-button" onClick={triggerHeart}>❤️</button>
+      {hearts.map((id) => (
+        <span key={id} className="heart-float">❤️</span>
+      ))}
     </div>
   );
 }
