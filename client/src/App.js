@@ -1,9 +1,7 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import "./App.css";
 
-import BroadcastHost from "./components/BroadcastHost";
-import BroadcastViewer from "./components/BroadcastViewer";
 import VideoChat from "./components/VideoChat";
 import SignUp from "./components/SignUp";
 import Login from "./components/Login";
@@ -17,18 +15,7 @@ function ProtectedRoute({ isAuthenticated, children }) {
 }
 
 function Shell({ isAuthenticated, setIsAuthenticated }) {
-  const location = useLocation();
   const navigate = useNavigate();
-
-  const path = location.pathname;
-  const current =
-    path === "/learn"
-      ? "learn"
-      : path === "/teach"
-      ? "teach"
-      : path === "/profile"
-      ? "profile"
-      : "learn";
 
   return (
     <div className="app-root">
@@ -46,30 +33,14 @@ function Shell({ isAuthenticated, setIsAuthenticated }) {
                 <span className="app-title">Xchange</span>
               </div>
               <span className="app-subtitle">
-                Instant learning & teaching matchmaking
+                Live video chat for instant skill exchange
               </span>
             </div>
           </div>
 
           <div className="app-nav-right">
             <button
-              className={`app-nav-button ${current === "learn" ? "active" : ""}`}
-              onClick={() => navigate("/learn")}
-            >
-              <span className="icon">🎓</span>
-              <span>Learn</span>
-            </button>
-
-            <button
-              className={`app-nav-button ${current === "teach" ? "active" : ""}`}
-              onClick={() => navigate("/teach")}
-            >
-              <span className="icon">🧑‍🏫</span>
-              <span>Teach</span>
-            </button>
-
-            <button
-              className={`app-nav-button ${current === "profile" ? "active" : ""}`}
+              className="app-nav-button"
               onClick={() => navigate("/profile")}
             >
               <span className="icon">💰</span>
@@ -94,9 +65,7 @@ function Shell({ isAuthenticated, setIsAuthenticated }) {
 
         {/* ✅ MAIN CONTENT */}
         <main className="app-main-panel">
-          {current === "learn" && <BroadcastViewer />}
-          {current === "teach" && <BroadcastHost />}
-          {current === "profile" && <VideoChat />}
+          <VideoChat />
         </main>
       </div>
     </div>
@@ -112,14 +81,14 @@ export default function App() {
     console.log("Sign up:", data);
     setIsAuthenticated(true);
     localStorage.setItem("auth", "true");
-    window.location.href = "/learn"; // redirect after signup
+    window.location.href = "/"; // redirect after signup
   };
 
   const handleLogin = (data) => {
     console.log("Login:", data);
     setIsAuthenticated(true);
     localStorage.setItem("auth", "true");
-    window.location.href = "/learn"; // redirect after login
+    window.location.href = "/"; // redirect after login
   };
 
   return (
