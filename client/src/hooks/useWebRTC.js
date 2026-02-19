@@ -12,7 +12,6 @@ export function useWebRTC(username = "Guest") {
   const socketRef = useRef(null);
   const peersRef = useRef({}); // ✅ multiple peer connections
 
-  const [roomId, setRoomId] = useState(null);
   const [remoteStreams, setRemoteStreams] = useState([]);
   const [messages, setMessages] = useState([]);
   const [reactions, setReactions] = useState([]);
@@ -55,9 +54,8 @@ export function useWebRTC(username = "Guest") {
     };
 
     pc.onicecandidate = (event) => {
-      if (event.candidate && roomId) {
+      if (event.candidate) {
         socketRef.current?.emit("ice-candidate", {
-          roomId,
           to: userId,
           candidate: event.candidate,
         });
@@ -72,11 +70,8 @@ export function useWebRTC(username = "Guest") {
     const socket = io(SIGNALING_URL, { path: "/socket.io" });
     socketRef.current = socket;
 
-    // ✅ Join room
-    socket.on("room-joined", async ({ roomId: joined }) => {
-      setRoomId(joined);
-      await startLocalVideo();
-    });
+    // ✅ Everyone joins instantly into "main-room"
+    socket.emit("join-room", { roomId: "main-room", name: username });
 
     // ✅ New user joined
     socket.on("user-joined", async (userId) => {
@@ -84,7 +79,7 @@ export function useWebRTC(username = "Guest") {
       const pc = createPeerConnection(userId, stream);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      socket.emit("offer", { roomId, to: userId, offer });
+      socket.emit("offer", { to: userId, offer });
     });
 
     // ✅ Handle incoming offer
@@ -94,7 +89,7 @@ export function useWebRTC(username = "Guest") {
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      socket.emit("answer", { roomId, to: from, answer });
+      socket.emit("answer", { to: from, answer });
     });
 
     // ✅ Handle incoming answer
@@ -128,25 +123,18 @@ export function useWebRTC(username = "Guest") {
       Object.values(peersRef.current).forEach((pc) => pc.close());
       peersRef.current = {};
     };
-  }, [roomId]);
+  }, [username]);
 
   // ✅ Helpers
-  const joinRoom = (targetRoomId) => {
-    if (!targetRoomId) return;
-    socketRef.current?.emit("join-room", { roomId: targetRoomId, name: username });
-    setRoomId(targetRoomId);
-  };
-
   const sendChatMessage = (text) => {
     const trimmed = (text || "").trim();
-    if (!trimmed || !roomId) return;
-    const msg = { roomId, user: username, text: trimmed, timestamp: Date.now() };
+    if (!trimmed) return;
+    const msg = { user: username, text: trimmed, timestamp: Date.now() };
     socketRef.current?.emit("chat-message", msg);
   };
 
   const sendReaction = (emoji) => {
-    if (!roomId) return;
-    const reaction = { roomId, user: username, emoji, timestamp: Date.now() };
+    const reaction = { user: username, emoji, timestamp: Date.now() };
     socketRef.current?.emit("reaction", reaction);
     setReactions((prev) => [...prev, reaction]);
   };
@@ -158,7 +146,6 @@ export function useWebRTC(username = "Guest") {
     reactions,
     sendChatMessage,
     sendReaction,
-    joinRoom,
     viewerCount,
   };
 }
