@@ -4,61 +4,62 @@ import ChatPanel from "./ChatPanel";
 import HeartsOverlay from "./HeartsOverlay";
 import "./VideoChat.css";
 
-export default function VideoChat({ role = "viewer", username = "Guest" }) {
+export default function VideoChat({ username = "Guest" }) {
   const {
     localVideoRef,
-    remoteVideoRef,
+    remoteStreams,
     messages,
     sendChatMessage,
-    callActive,
-    formattedTime,
-    joinRoom,
-    startCall,
-    endCall,
     viewerCount,
-    sendHeart,
-  } = useWebRTC(role, username);
+    sendReaction,
+  } = useWebRTC(username);
 
   const [roomInput, setRoomInput] = useState("");
 
   return (
     <div className="vc-stage">
       <div className="vc-controls">
+        {/* Room input removed if everyone joins instantly */}
         <input
           type="text"
-          placeholder="Enter room ID"
+          placeholder="Room (optional)"
           value={roomInput}
           onChange={(e) => setRoomInput(e.target.value)}
         />
-        <button className="primary" onClick={() => joinRoom(roomInput)}>
-          Join Room
-        </button>
-        {role === "host" && !callActive && (
-          <button className="primary" onClick={startCall}>Start Call</button>
-        )}
-        {callActive && (
-          <button className="primary" onClick={endCall}>End Call</button>
-        )}
       </div>
 
       <div className="vc-videos">
+        {/* Local video */}
         <div className="vc-video">
           <video ref={localVideoRef} autoPlay muted playsInline />
           <span className="vc-label">Me</span>
         </div>
-        <div className="vc-video">
-          <video ref={remoteVideoRef} autoPlay playsInline />
-          <span className="vc-label">Remote</span>
-          <HeartsOverlay onHeart={sendHeart} />
-        </div>
+
+        {/* Remote videos */}
+        {remoteStreams.map((stream, idx) => (
+          <div className="vc-video" key={stream.id || idx}>
+            <video
+              autoPlay
+              playsInline
+              ref={(videoEl) => {
+                if (videoEl) videoEl.srcObject = stream;
+              }}
+            />
+            <span className="vc-label">Remote {idx + 1}</span>
+            <HeartsOverlay onHeart={sendReaction} />
+          </div>
+        ))}
       </div>
 
       <div className="vc-stats">
-        <span>⏱ {formattedTime()}</span>
         <span>👥 {viewerCount} viewers</span>
       </div>
 
-      <ChatPanel messages={messages} sendMessage={sendChatMessage} username={username} />
+      <ChatPanel
+        messages={messages}
+        sendMessage={sendChatMessage}
+        username={username}
+      />
     </div>
   );
 }
