@@ -81,14 +81,14 @@ export default function App() {
     console.log("Sign up:", data);
     setIsAuthenticated(true);
     localStorage.setItem("auth", "true");
-    window.location.href = "/"; // redirect after signup
+    window.location.href = "/login"; // redirect to login after signup
   };
 
   const handleLogin = (data) => {
     console.log("Login:", data);
     setIsAuthenticated(true);
     localStorage.setItem("auth", "true");
-    window.location.href = "/"; // redirect after login
+    window.location.href = "/login"; // redirect to login after login
   };
 
   return (
@@ -100,7 +100,7 @@ export default function App() {
 
       {/* Protected shell */}
       <Route
-        path="/*"
+        path="/dashboard/*"
         element={
           <ProtectedRoute isAuthenticated={isAuthenticated}>
             <Shell
