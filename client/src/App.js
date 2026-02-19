@@ -41,10 +41,10 @@ function Shell({ isAuthenticated, setIsAuthenticated }) {
           <div className="app-nav-right">
             <button
               className="app-nav-button"
-              onClick={() => navigate("/profile")}
+              onClick={() => navigate("/dashboard")}
             >
-              <span className="icon">💰</span>
-              <span>Profile</span>
+              <span className="icon">💬</span>
+              <span>Dashboard</span>
             </button>
 
             {isAuthenticated && (
@@ -88,7 +88,7 @@ export default function App() {
     console.log("Login:", data);
     setIsAuthenticated(true);
     localStorage.setItem("auth", "true");
-    window.location.href = "/login"; // redirect to login after login
+    window.location.href = "/dashboard"; // redirect to dashboard after login
   };
 
   return (
