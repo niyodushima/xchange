@@ -17,7 +17,7 @@ export function useWebRTC(username = "Guest") {
   const [reactions, setReactions] = useState([]);
   const [viewerCount, setViewerCount] = useState(0);
 
-  // ✅ Start local video
+  // ✅ Start local video immediately
   const startLocalVideo = async () => {
     if (localStreamRef.current) return localStreamRef.current;
     try {
@@ -69,6 +69,9 @@ export function useWebRTC(username = "Guest") {
   useEffect(() => {
     const socket = io(SIGNALING_URL, { path: "/socket.io" });
     socketRef.current = socket;
+
+    // ✅ Start local video immediately on mount
+    startLocalVideo();
 
     // ✅ Everyone joins instantly into "main-room"
     socket.emit("join-room", { roomId: "main-room", name: username });
