@@ -70,26 +70,43 @@ export function useWebRTC(username = "Guest") {
     // ✅ Matched with partner
     socket.on("matched", async ({ partnerId }) => {
       setPartnerId(partnerId);
+
+      // Decide role: only one side creates the offer
+      const amOfferer = socket.id < partnerId; // simple rule: lower ID offers
+
       const stream = await startLocalVideo();
       const pc = createPeerConnection(partnerId, stream);
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit("offer", { to: partnerId, offer });
+
+      if (amOfferer) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit("offer", { to: partnerId, offer });
+      }
     });
 
     socket.on("offer", async ({ from, offer }) => {
       setPartnerId(from);
       const stream = await startLocalVideo();
       const pc = createPeerConnection(from, stream);
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit("answer", { to: from, answer });
+
+      if (pc.signalingState === "stable") {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit("answer", { to: from, answer });
+      }
     });
 
     socket.on("answer", async ({ from, answer }) => {
-      if (pcRef.current) {
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+      if (pcRef.current && pcRef.current.signalingState === "have-local-offer") {
+        await pcRef.current.setRemoteDescription(
+          new RTCSessionDescription(answer)
+        );
+      } else {
+        console.warn(
+          "Skipping setRemoteDescription for answer, wrong state:",
+          pcRef.current?.signalingState
+        );
       }
     });
 
