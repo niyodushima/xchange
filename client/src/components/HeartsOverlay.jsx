@@ -4,13 +4,14 @@ import "./HeartsOverlay.css";
 export default function HeartsOverlay({ onHeart, incomingReactions = [] }) {
   const [hearts, setHearts] = useState([]);
 
-  // ✅ Stable triggerHeart function
+  // Stable function to trigger a reaction animation
   const triggerHeart = useCallback(
     (emoji = "❤️") => {
       const id = Date.now() + Math.random();
       setHearts((prev) => [...prev, { id, emoji }]);
       if (onHeart) onHeart(emoji);
-      // Remove after animation
+
+      // Remove after animation ends
       setTimeout(() => {
         setHearts((prev) => prev.filter((h) => h.id !== id));
       }, 3000);
@@ -18,16 +19,7 @@ export default function HeartsOverlay({ onHeart, incomingReactions = [] }) {
     [onHeart]
   );
 
-  // Listen for keyboard shortcut (optional)
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === "h") triggerHeart("❤️");
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [triggerHeart]);
-
-  // ✅ Trigger hearts when incoming reactions arrive
+  // Listen for incoming reactions from partner
   useEffect(() => {
     if (incomingReactions.length > 0) {
       const latest = incomingReactions[incomingReactions.length - 1];
@@ -37,11 +29,17 @@ export default function HeartsOverlay({ onHeart, incomingReactions = [] }) {
 
   return (
     <div className="hearts-overlay">
-      <button className="heart-button" onClick={() => triggerHeart("❤️")}>
-        ❤️
-      </button>
+      {/* Reaction buttons */}
+      <div className="reaction-buttons">
+        <button onClick={() => triggerHeart("❤️")}>❤️</button>
+        <button onClick={() => triggerHeart("😂")}>😂</button>
+        <button onClick={() => triggerHeart("🔥")}>🔥</button>
+        <button onClick={() => triggerHeart("👍")}>👍</button>
+      </div>
+
+      {/* Floating emoji animations */}
       {hearts.map((h) => (
-        <span key={h.id} className="heart" style={{ animationDuration: "3s" }}>
+        <span key={h.id} className="heart">
           {h.emoji}
         </span>
       ))}
