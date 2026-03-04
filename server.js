@@ -18,7 +18,6 @@ io.on("connection", (socket) => {
   console.log("Connected:", socket.id);
 
   socket.on("find-match", ({ name, gender, preference }) => {
-    // Try to find a partner that matches preference
     const idx = waitingUsers.findIndex(
       (u) =>
         (preference === "any" || u.gender === preference) &&
@@ -44,11 +43,19 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("offer", ({ to, offer }) => { if (to && offer) io.to(to).emit("offer", { from: socket.id, offer }); });
-  socket.on("answer", ({ to, answer }) => { if (to && answer) io.to(to).emit("answer", { from: socket.id, answer }); });
-  socket.on("ice-candidate", ({ to, candidate }) => { if (to && candidate) io.to(to).emit("ice-candidate", { from: socket.id, candidate }); });
+  socket.on("offer", ({ to, offer }) => {
+    if (to && offer) io.to(to).emit("offer", { from: socket.id, offer });
+  });
+  socket.on("answer", ({ to, answer }) => {
+    if (to && answer) io.to(to).emit("answer", { from: socket.id, answer });
+  });
+  socket.on("ice-candidate", ({ to, candidate }) => {
+    if (to && candidate) io.to(to).emit("ice-candidate", { from: socket.id, candidate });
+  });
 
-  socket.on("reaction", (reaction) => { if (reaction?.partnerId) io.to(reaction.partnerId).emit("reaction", reaction); });
+  socket.on("reaction", (reaction) => {
+    if (reaction?.partnerId) io.to(reaction.partnerId).emit("reaction", reaction);
+  });
 
   socket.on("disconnect", () => {
     const idx = waitingUsers.findIndex((u) => u.id === socket.id);
