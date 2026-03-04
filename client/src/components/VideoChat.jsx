@@ -8,8 +8,14 @@ export default function VideoChat({ username = "Guest" }) {
   const [preference, setPreference] = useState("any");
   const [isFading, setIsFading] = useState(false);
 
-  const { localVideoRef, remoteStream, sendReaction, nextMatch, reactions, partnerMeta } =
-    useWebRTC(username, gender, preference);
+  const {
+    localVideoRef,
+    remoteStream,
+    sendReaction,
+    nextMatch,
+    reactions,
+    partnerMeta,
+  } = useWebRTC(username, gender, preference);
 
   const handleNext = () => {
     setIsFading(true);
@@ -39,7 +45,18 @@ export default function VideoChat({ username = "Guest" }) {
             <span className="vc-label">
               Partner {partnerMeta?.name ? `(${partnerMeta.gender})` : ""}
             </span>
-            <HeartsOverlay onHeart={sendReaction} incomingReactions={reactions} />
+            <HeartsOverlay
+              onHeart={sendReaction}
+              incomingReactions={reactions}
+            />
+          </div>
+        )}
+
+        {/* Loading overlay during fade-out */}
+        {isFading && (
+          <div className="vc-loading">
+            <div className="spinner"></div>
+            Searching for next partner…
           </div>
         )}
       </div>
@@ -54,13 +71,18 @@ export default function VideoChat({ username = "Guest" }) {
         </label>
         <label>
           Match with:
-          <select value={preference} onChange={(e) => setPreference(e.target.value)}>
+          <select
+            value={preference}
+            onChange={(e) => setPreference(e.target.value)}
+          >
             <option value="any">Any</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
           </select>
         </label>
-        <button className="primary" onClick={handleNext}>🔄 Next</button>
+        <button className="primary" onClick={handleNext}>
+          🔄 Next
+        </button>
       </div>
     </div>
   );
