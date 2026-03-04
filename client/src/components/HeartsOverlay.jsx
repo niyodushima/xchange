@@ -1,19 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import "./HeartsOverlay.css";
 
-export default function HeartsOverlay({ onHeart }) {
+export default function HeartsOverlay({ onHeart, incomingReactions = [] }) {
   const [hearts, setHearts] = useState([]);
 
-  // Add a new heart when user clicks
-  const triggerHeart = (emoji = "❤️") => {
-    const id = Date.now();
-    setHearts((prev) => [...prev, { id, emoji }]);
-    if (onHeart) onHeart(emoji);
-    // Remove after animation
-    setTimeout(() => {
-      setHearts((prev) => prev.filter((h) => h.id !== id));
-    }, 3000);
-  };
+  // ✅ Stable triggerHeart function
+  const triggerHeart = useCallback(
+    (emoji = "❤️") => {
+      const id = Date.now() + Math.random();
+      setHearts((prev) => [...prev, { id, emoji }]);
+      if (onHeart) onHeart(emoji);
+      // Remove after animation
+      setTimeout(() => {
+        setHearts((prev) => prev.filter((h) => h.id !== id));
+      }, 3000);
+    },
+    [onHeart]
+  );
 
   // Listen for keyboard shortcut (optional)
   useEffect(() => {
@@ -22,7 +25,15 @@ export default function HeartsOverlay({ onHeart }) {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, []);
+  }, [triggerHeart]);
+
+  // ✅ Trigger hearts when incoming reactions arrive
+  useEffect(() => {
+    if (incomingReactions.length > 0) {
+      const latest = incomingReactions[incomingReactions.length - 1];
+      triggerHeart(latest.emoji);
+    }
+  }, [incomingReactions, triggerHeart]);
 
   return (
     <div className="hearts-overlay">
