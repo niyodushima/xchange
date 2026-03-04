@@ -31,7 +31,7 @@ export function useWebRTC(username = "Guest", gender = "male", preference = "any
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
     pc.ontrack = (event) => {
-      console.log("Remote track received:", event.streams[0]);
+      console.log("✅ Remote track received:", event.streams[0]);
       setRemoteStream(event.streams[0]);
     };
 
@@ -53,6 +53,7 @@ export function useWebRTC(username = "Guest", gender = "male", preference = "any
     socket.emit("find-match", { name: username, gender, preference });
 
     socket.on("matched", async ({ partnerId, role, partnerMeta }) => {
+      console.log("Matched with partner:", partnerId, "Role:", role);
       setPartnerMeta(partnerMeta);
       const stream = await startLocalVideo();
       const pc = createPeerConnection(partnerId, stream);
@@ -64,7 +65,7 @@ export function useWebRTC(username = "Guest", gender = "male", preference = "any
     });
 
     socket.on("offer", async ({ from, offer }) => {
-      console.log("Received offer from", from);
+      console.log("📩 Received offer from", from);
       const stream = await startLocalVideo();
       const pc = createPeerConnection(from, stream);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -74,14 +75,14 @@ export function useWebRTC(username = "Guest", gender = "male", preference = "any
     });
 
     socket.on("answer", async ({ from, answer }) => {
-      console.log("Received answer from", from);
+      console.log("📩 Received answer from", from);
       if (pcRef.current?.signalingState === "have-local-offer") {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
       }
     });
 
     socket.on("ice-candidate", async ({ candidate }) => {
-      console.log("Received ICE candidate");
+      console.log("📩 Received ICE candidate");
       if (pcRef.current) await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
     });
 
