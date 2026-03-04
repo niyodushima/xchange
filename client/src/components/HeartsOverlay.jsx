@@ -4,11 +4,13 @@ import "./HeartsOverlay.css";
 export default function HeartsOverlay({ onHeart, incomingReactions = [] }) {
   const [hearts, setHearts] = useState([]);
 
-  // Stable function to trigger a reaction animation
+  // Trigger a local reaction (emoji floats up + send to partner)
   const triggerHeart = useCallback(
     (emoji = "❤️") => {
       const id = Date.now() + Math.random();
       setHearts((prev) => [...prev, { id, emoji }]);
+
+      // Send to partner
       if (onHeart) onHeart(emoji);
 
       // Remove after animation ends
@@ -19,7 +21,7 @@ export default function HeartsOverlay({ onHeart, incomingReactions = [] }) {
     [onHeart]
   );
 
-  // Listen for incoming reactions from partner
+  // Handle incoming reactions from partner
   useEffect(() => {
     if (incomingReactions.length > 0) {
       const latest = incomingReactions[incomingReactions.length - 1];
