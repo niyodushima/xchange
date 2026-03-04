@@ -10,7 +10,6 @@ export default function VideoChat({ username = "Guest" }) {
     remoteStream,
     messages,
     sendChatMessage,
-    reactions,
     sendReaction,
     nextMatch,
   } = useWebRTC(username);
