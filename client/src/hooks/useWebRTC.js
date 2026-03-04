@@ -1,59 +1,34 @@
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
-const SIGNALING_URL =
-  process.env.REACT_APP_SIGNALING_URL || "https://zazza-backend.onrender.com";
-
+const SIGNALING_URL = process.env.REACT_APP_SIGNALING_URL || "http://localhost:4000";
 const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
 
-export function useWebRTC(username = "Guest") {
+export function useWebRTC(username = "Guest", gender = "male", preference = "any") {
   const localVideoRef = useRef(null);
   const localStreamRef = useRef(null);
   const socketRef = useRef(null);
   const pcRef = useRef(null);
 
   const [remoteStream, setRemoteStream] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [partnerId, setPartnerId] = useState(null);
+  const [partnerMeta, setPartnerMeta] = useState(null);
+  const [reactions, setReactions] = useState([]);
 
-  // ✅ Start local video immediately
   const startLocalVideo = async () => {
     if (localStreamRef.current) return localStreamRef.current;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      return stream;
-    } catch (err) {
-      console.error("Media access failed:", err);
-      alert("Media access failed: " + err.message);
-      return null;
-    }
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localStreamRef.current = stream;
+    if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+    return stream;
   };
 
   const createPeerConnection = (partnerId, stream) => {
     const pc = new RTCPeerConnection({ iceServers });
-
-    if (stream) {
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-    }
-
-    pc.ontrack = (event) => {
-      setRemoteStream(event.streams[0]);
-    };
-
+    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+    pc.ontrack = (event) => setRemoteStream(event.streams[0]);
     pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socketRef.current?.emit("ice-candidate", {
-          to: partnerId,
-          candidate: event.candidate,
-        });
-      }
+      if (event.candidate) socketRef.current.emit("ice-candidate", { to: partnerId, candidate: event.candidate });
     };
-
     pcRef.current = pc;
     return pc;
   };
@@ -61,18 +36,14 @@ export function useWebRTC(username = "Guest") {
   useEffect(() => {
     const socket = io(SIGNALING_URL, { path: "/socket.io" });
     socketRef.current = socket;
-
     startLocalVideo();
 
-    // ✅ Request a match immediately
-    socket.emit("find-match", { name: username });
+    socket.emit("find-match", { name: username, gender, preference });
 
-    // ✅ Matched with partner and role
-    socket.on("matched", async ({ partnerId, role }) => {
-      setPartnerId(partnerId);
+    socket.on("matched", async ({ partnerId, role, partnerMeta }) => {
+      setPartnerMeta(partnerMeta);
       const stream = await startLocalVideo();
       const pc = createPeerConnection(partnerId, stream);
-
       if (role === "offerer") {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -81,80 +52,46 @@ export function useWebRTC(username = "Guest") {
     });
 
     socket.on("offer", async ({ from, offer }) => {
-      setPartnerId(from);
       const stream = await startLocalVideo();
       const pc = createPeerConnection(from, stream);
-
-      if (pc.signalingState === "stable") {
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit("answer", { to: from, answer });
-      }
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit("answer", { to: from, answer });
     });
 
     socket.on("answer", async ({ from, answer }) => {
-      if (pcRef.current && pcRef.current.signalingState === "have-local-offer") {
-        await pcRef.current.setRemoteDescription(
-          new RTCSessionDescription(answer)
-        );
-      } else {
-        console.warn(
-          "Skipping setRemoteDescription for answer, wrong state:",
-          pcRef.current?.signalingState
-        );
+      if (pcRef.current?.signalingState === "have-local-offer") {
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
       }
     });
 
-    socket.on("ice-candidate", async ({ from, candidate }) => {
-      if (pcRef.current) {
-        try {
-          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.error("Error adding ICE candidate", err);
-        }
-      }
+    socket.on("ice-candidate", async ({ candidate }) => {
+      if (pcRef.current) await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
     });
 
-    // ✅ Chat
-    socket.on("chat-message", (msg) => setMessages((prev) => [...prev, msg]));
+    socket.on("reaction", (reaction) => setReactions((prev) => [...prev, reaction]));
 
     return () => {
       socket.disconnect();
       pcRef.current?.close();
       pcRef.current = null;
     };
-  }, [username]);
-
-  // ✅ Helpers
-  const sendChatMessage = (text) => {
-    const trimmed = (text || "").trim();
-    if (!trimmed || !partnerId) return;
-    const msg = { user: username, text: trimmed, timestamp: Date.now(), partnerId };
-    socketRef.current?.emit("chat-message", msg);
-  };
+  }, [username, gender, preference]);
 
   const sendReaction = (emoji) => {
-    if (!partnerId) return;
-    const reaction = { user: username, emoji, timestamp: Date.now(), partnerId };
-    socketRef.current?.emit("reaction", reaction);
+    if (!partnerMeta) return;
+    const reaction = { user: username, emoji, timestamp: Date.now(), partnerId: partnerMeta.id };
+    socketRef.current.emit("reaction", reaction);
   };
 
   const nextMatch = () => {
-    // End current call and request a new match
     pcRef.current?.close();
     pcRef.current = null;
     setRemoteStream(null);
-    setMessages([]);
-    socketRef.current?.emit("find-match", { name: username });
+    setReactions([]);
+    socketRef.current.emit("find-match", { name: username, gender, preference });
   };
 
-  return {
-    localVideoRef,
-    remoteStream,
-    messages,
-    sendChatMessage,
-    sendReaction,
-    nextMatch,
-  };
+  return { localVideoRef, remoteStream, sendReaction, nextMatch, reactions, partnerMeta };
 }
