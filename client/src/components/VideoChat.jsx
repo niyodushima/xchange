@@ -18,6 +18,7 @@ export default function VideoChat({ username = "Guest" }) {
     partnerMeta,
   } = useWebRTC(username, gender, preference);
 
+  // Fun tagline generator
   const taglines = [
     "Finding your next vibe…",
     "Connecting you to explorers…",
@@ -35,7 +36,7 @@ export default function VideoChat({ username = "Guest" }) {
     setTimeout(() => {
       nextMatch();
       setIsFading(false);
-    }, 600);
+    }, 600); // matches CSS fadeOut duration
   };
 
   return (
@@ -54,7 +55,9 @@ export default function VideoChat({ username = "Guest" }) {
               autoPlay
               playsInline
               ref={(videoEl) => {
-                if (videoEl && remoteStream) videoEl.srcObject = remoteStream;
+                if (videoEl && remoteStream) {
+                  videoEl.srcObject = remoteStream;
+                }
               }}
             />
             <span className="vc-label">
