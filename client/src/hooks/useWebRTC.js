@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 const SIGNALING_URL = process.env.REACT_APP_SIGNALING_URL || "http://localhost:4000";
-const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+const iceServers = [
+  { urls: "stun:stun.l.google.com:19302" },
+  // Add TURN for reliability if needed:
+  // { urls: "turn:your-turn-server", username: "user", credential: "pass" }
+];
 
 export function useWebRTC(username = "Guest", gender = "male", preference = "any") {
   const localVideoRef = useRef(null);
@@ -25,10 +29,18 @@ export function useWebRTC(username = "Guest", gender = "male", preference = "any
   const createPeerConnection = (partnerId, stream) => {
     const pc = new RTCPeerConnection({ iceServers });
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-    pc.ontrack = (event) => setRemoteStream(event.streams[0]);
-    pc.onicecandidate = (event) => {
-      if (event.candidate) socketRef.current.emit("ice-candidate", { to: partnerId, candidate: event.candidate });
+
+    pc.ontrack = (event) => {
+      console.log("Remote track received:", event.streams[0]);
+      setRemoteStream(event.streams[0]);
     };
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socketRef.current.emit("ice-candidate", { to: partnerId, candidate: event.candidate });
+      }
+    };
+
     pcRef.current = pc;
     return pc;
   };
@@ -52,6 +64,7 @@ export function useWebRTC(username = "Guest", gender = "male", preference = "any
     });
 
     socket.on("offer", async ({ from, offer }) => {
+      console.log("Received offer from", from);
       const stream = await startLocalVideo();
       const pc = createPeerConnection(from, stream);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -61,12 +74,14 @@ export function useWebRTC(username = "Guest", gender = "male", preference = "any
     });
 
     socket.on("answer", async ({ from, answer }) => {
+      console.log("Received answer from", from);
       if (pcRef.current?.signalingState === "have-local-offer") {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
       }
     });
 
     socket.on("ice-candidate", async ({ candidate }) => {
+      console.log("Received ICE candidate");
       if (pcRef.current) await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
     });
 
