@@ -67,17 +67,13 @@ export function useWebRTC(username = "Guest") {
     // ✅ Request a match immediately
     socket.emit("find-match", { name: username });
 
-    // ✅ Matched with partner
-    socket.on("matched", async ({ partnerId }) => {
+    // ✅ Matched with partner and role
+    socket.on("matched", async ({ partnerId, role }) => {
       setPartnerId(partnerId);
-
-      // Decide role: only one side creates the offer
-      const amOfferer = socket.id < partnerId; // simple rule: lower ID offers
-
       const stream = await startLocalVideo();
       const pc = createPeerConnection(partnerId, stream);
 
-      if (amOfferer) {
+      if (role === "offerer") {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         socket.emit("offer", { to: partnerId, offer });
