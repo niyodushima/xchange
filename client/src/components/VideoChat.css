@@ -1,136 +1,59 @@
-/* ✅ Stage container */
 .vc-stage {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
-  color: #fff;
   height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  padding: 1rem;
-  box-sizing: border-box;
+  background: linear-gradient(135deg, #ff9a9e, #fad0c4);
 }
 
-/* ✅ Video grid */
 .vc-videos {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex: 1;
   width: 100%;
-  max-width: 1400px;
-  margin-bottom: 20px;
 }
 
-/* ✅ Video tile */
 .vc-video {
+  flex: 1;
   position: relative;
-  background: rgba(34, 34, 34, 0.85);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  animation: fadeIn 0.6s ease;
 }
 
 .vc-video video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #000;
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
-/* ✅ Labels */
 .vc-label {
   position: absolute;
-  bottom: 12px;
-  left: 12px;
-  background: rgba(0,0,0,0.6);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #fff;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
-/* ✅ Controls */
 .vc-controls {
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
 }
 
 .vc-controls button.primary {
-  background: #ff3366;
-  color: #fff;
+  background: #ff6f61;
+  color: white;
   border: none;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-size: 16px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.vc-controls button.primary:hover {
-  background: #ff5588;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 51, 102, 0.4);
-}
-
-.vc-stats {
-  font-size: 14px;
-  color: #ccc;
-}
-
-/* ✅ Chat panel */
-.vc-chat {
-  width: 100%;
-  max-width: 600px;
-  background: rgba(34,34,34,0.85);
-  border-radius: 16px;
-  padding: 16px;
-  overflow-y: auto;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-}
-
-.vc-chat-message {
-  margin: 6px 0;
-  font-size: 14px;
-}
-
-.vc-chat-message strong {
-  color: #ff3366;
-}
-
-/* ✅ Responsive */
-@media (max-width: 768px) {
-  .vc-videos {
-    grid-template-columns: 1fr;
-  }
-  .vc-controls {
-    flex-direction: column;
-    gap: 10px;
-  }
-  .vc-controls button.primary {
-    width: 100%;
-  }
-  .vc-chat {
-    max-width: 100%;
-  }
-}
-
-/* ✅ Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.vc-controls select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
 }
