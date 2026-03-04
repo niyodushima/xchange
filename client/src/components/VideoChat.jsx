@@ -7,6 +7,7 @@ export default function VideoChat({ username = "Guest" }) {
   const [gender, setGender] = useState("male");
   const [preference, setPreference] = useState("any");
   const [isFading, setIsFading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Searching for next partner…");
 
   const {
     localVideoRef,
@@ -17,7 +18,21 @@ export default function VideoChat({ username = "Guest" }) {
     partnerMeta,
   } = useWebRTC(username, gender, preference);
 
+  // Fun tagline generator
+  const taglines = [
+    "Finding your next vibe…",
+    "Connecting you to explorers…",
+    "Searching for a new smile…",
+    "Matching you with fresh energy…",
+    "Looking for your next spark…",
+    "Discovering someone new…",
+  ];
+
   const handleNext = () => {
+    // Pick a random tagline
+    const randomTagline = taglines[Math.floor(Math.random() * taglines.length)];
+    setLoadingMessage(randomTagline);
+
     setIsFading(true);
     setTimeout(() => {
       nextMatch();
@@ -56,7 +71,7 @@ export default function VideoChat({ username = "Guest" }) {
         {isFading && (
           <div className="vc-loading">
             <div className="spinner"></div>
-            Searching for next partner…
+            {loadingMessage}
           </div>
         )}
       </div>
