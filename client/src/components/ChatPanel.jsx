@@ -18,13 +18,11 @@ export default function ChatPanel({ messages, sendMessage, username }) {
 
   return (
     <div className="chat">
-      {/* Header */}
       <div className="chat-header">
         <img src="/xchange (1).png" alt="Logo" className="chat-logo" />
         <span className="chat-title">Chat</span>
       </div>
 
-      {/* Stream */}
       <div className="chat-stream">
         <div className="chat-watermark">
           <img src="/xchange (1).png" alt="Watermark" />
@@ -43,7 +41,6 @@ export default function ChatPanel({ messages, sendMessage, username }) {
         ))}
       </div>
 
-      {/* Input */}
       <div className="chat-input">
         <textarea
           rows={1}
