@@ -18,7 +18,6 @@ export default function VideoChat({ username = "Guest" }) {
     partnerMeta,
   } = useWebRTC(username, gender, preference);
 
-  // Fun tagline generator
   const taglines = [
     "Finding your next vibe…",
     "Connecting you to explorers…",
@@ -29,7 +28,6 @@ export default function VideoChat({ username = "Guest" }) {
   ];
 
   const handleNext = () => {
-    // Pick a random tagline
     const randomTagline = taglines[Math.floor(Math.random() * taglines.length)];
     setLoadingMessage(randomTagline);
 
@@ -37,33 +35,36 @@ export default function VideoChat({ username = "Guest" }) {
     setTimeout(() => {
       nextMatch();
       setIsFading(false);
-    }, 600); // matches CSS fadeOut duration
+    }, 600);
   };
 
   return (
     <div className="vc-stage">
       <div className={`vc-videos ${isFading ? "fade-out" : ""}`}>
+        {/* Local camera */}
         <div className="vc-video">
           <video ref={localVideoRef} autoPlay muted playsInline />
           <span className="vc-label">Me ({gender})</span>
         </div>
 
-        {remoteStream && (
+        {/* Partner camera */}
+        {remoteStream ? (
           <div className="vc-video">
             <video
               autoPlay
               playsInline
               ref={(videoEl) => {
-                if (videoEl) videoEl.srcObject = remoteStream;
+                if (videoEl && remoteStream) videoEl.srcObject = remoteStream;
               }}
             />
             <span className="vc-label">
               Partner {partnerMeta?.name ? `(${partnerMeta.gender})` : ""}
             </span>
-            <HeartsOverlay
-              onHeart={sendReaction}
-              incomingReactions={reactions}
-            />
+            <HeartsOverlay onHeart={sendReaction} incomingReactions={reactions} />
+          </div>
+        ) : (
+          <div className="vc-video">
+            <span className="vc-label">Waiting for partner…</span>
           </div>
         )}
 
