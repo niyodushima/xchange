@@ -4,21 +4,18 @@ import HeartsOverlay from "./HeartsOverlay";
 import "./VideoChat.css";
 
 export default function VideoChat({ username = "Guest" }) {
-  const { localVideoRef, remoteStream, sendReaction, nextMatch, reactions } = useWebRTC(username);
-  const [filter, setFilter] = useState("none");
+  const [gender, setGender] = useState("male");
+  const [preference, setPreference] = useState("any");
+
+  const { localVideoRef, remoteStream, sendReaction, nextMatch, reactions, partnerMeta } =
+    useWebRTC(username, gender, preference);
 
   return (
     <div className="vc-stage">
       <div className="vc-videos">
         <div className="vc-video">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-            style={{ filter }}
-          />
-          <span className="vc-label">Me</span>
+          <video ref={localVideoRef} autoPlay muted playsInline />
+          <span className="vc-label">Me ({gender})</span>
         </div>
 
         {remoteStream && (
@@ -26,27 +23,35 @@ export default function VideoChat({ username = "Guest" }) {
             <video
               autoPlay
               playsInline
-              style={{ filter }}
               ref={(videoEl) => {
                 if (videoEl) videoEl.srcObject = remoteStream;
               }}
             />
-            <span className="vc-label">Partner</span>
+            <span className="vc-label">
+              Partner {partnerMeta?.name ? `(${partnerMeta.gender})` : ""}
+            </span>
             <HeartsOverlay onHeart={sendReaction} incomingReactions={reactions} />
           </div>
         )}
       </div>
 
       <div className="vc-controls">
+        <label>
+          I am:
+          <select value={gender} onChange={(e) => setGender(e.target.value)}>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </label>
+        <label>
+          Match with:
+          <select value={preference} onChange={(e) => setPreference(e.target.value)}>
+            <option value="any">Any</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </label>
         <button className="primary" onClick={nextMatch}>🔄 Next</button>
-        <select onChange={(e) => setFilter(e.target.value)} value={filter}>
-          <option value="none">No Filter</option>
-          <option value="grayscale(100%)">Grayscale</option>
-          <option value="sepia(80%)">Sepia</option>
-          <option value="contrast(1.5)">High Contrast</option>
-          <option value="hue-rotate(90deg)">Hue Rotate</option>
-          <option value="brightness(1.2)">Bright</option>
-        </select>
       </div>
     </div>
   );
