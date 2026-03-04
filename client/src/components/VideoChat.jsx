@@ -6,13 +6,22 @@ import "./VideoChat.css";
 export default function VideoChat({ username = "Guest" }) {
   const [gender, setGender] = useState("male");
   const [preference, setPreference] = useState("any");
+  const [isFading, setIsFading] = useState(false);
 
   const { localVideoRef, remoteStream, sendReaction, nextMatch, reactions, partnerMeta } =
     useWebRTC(username, gender, preference);
 
+  const handleNext = () => {
+    setIsFading(true);
+    setTimeout(() => {
+      nextMatch();
+      setIsFading(false);
+    }, 600); // matches CSS fadeOut duration
+  };
+
   return (
     <div className="vc-stage">
-      <div className="vc-videos">
+      <div className={`vc-videos ${isFading ? "fade-out" : ""}`}>
         <div className="vc-video">
           <video ref={localVideoRef} autoPlay muted playsInline />
           <span className="vc-label">Me ({gender})</span>
@@ -51,7 +60,7 @@ export default function VideoChat({ username = "Guest" }) {
             <option value="female">Female</option>
           </select>
         </label>
-        <button className="primary" onClick={nextMatch}>🔄 Next</button>
+        <button className="primary" onClick={handleNext}>🔄 Next</button>
       </div>
     </div>
   );
