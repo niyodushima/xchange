@@ -14,7 +14,6 @@ export function useWebRTC(username = "Guest") {
 
   const [remoteStream, setRemoteStream] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [reactions, setReactions] = useState([]);
   const [partnerId, setPartnerId] = useState(null);
 
   // ✅ Start local video immediately
@@ -65,7 +64,7 @@ export function useWebRTC(username = "Guest") {
 
     startLocalVideo();
 
-    // ✅ Request a match
+    // ✅ Request a match immediately
     socket.emit("find-match", { name: username });
 
     // ✅ Matched with partner
@@ -104,11 +103,8 @@ export function useWebRTC(username = "Guest") {
       }
     });
 
-    // ✅ Chat + reactions
+    // ✅ Chat
     socket.on("chat-message", (msg) => setMessages((prev) => [...prev, msg]));
-    socket.on("reaction", (reaction) =>
-      setReactions((prev) => [...prev, reaction])
-    );
 
     return () => {
       socket.disconnect();
@@ -121,15 +117,14 @@ export function useWebRTC(username = "Guest") {
   const sendChatMessage = (text) => {
     const trimmed = (text || "").trim();
     if (!trimmed || !partnerId) return;
-    const msg = { user: username, text: trimmed, timestamp: Date.now() };
+    const msg = { user: username, text: trimmed, timestamp: Date.now(), partnerId };
     socketRef.current?.emit("chat-message", msg);
   };
 
   const sendReaction = (emoji) => {
     if (!partnerId) return;
-    const reaction = { user: username, emoji, timestamp: Date.now() };
+    const reaction = { user: username, emoji, timestamp: Date.now(), partnerId };
     socketRef.current?.emit("reaction", reaction);
-    setReactions((prev) => [...prev, reaction]);
   };
 
   const nextMatch = () => {
@@ -138,7 +133,6 @@ export function useWebRTC(username = "Guest") {
     pcRef.current = null;
     setRemoteStream(null);
     setMessages([]);
-    setReactions([]);
     socketRef.current?.emit("find-match", { name: username });
   };
 
@@ -146,7 +140,6 @@ export function useWebRTC(username = "Guest") {
     localVideoRef,
     remoteStream,
     messages,
-    reactions,
     sendChatMessage,
     sendReaction,
     nextMatch,
