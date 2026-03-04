@@ -25,38 +25,26 @@ const io = new Server(server, {
   path: "/socket.io",
 });
 
-const rooms = new Map();
-
-function updateViewerCount(roomId) {
-  const room = rooms.get(roomId);
-  const count = room ? room.size : 0;
-  io.to(roomId).emit("viewer-count", count);
-}
+// ✅ Queue for matchmaking
+const waitingUsers = [];
 
 io.on("connection", (socket) => {
   console.log("Connected:", socket.id);
 
-  // ✅ Everyone joins "main-room" by default
-  socket.on("join-room", ({ roomId = "main-room", name }) => {
-    socket.join(roomId);
-
-    const existing = rooms.get(roomId) || new Set();
-    existing.add(socket.id);
-    rooms.set(roomId, existing);
-
-    // Notify others
-    socket.to(roomId).emit("user-joined", socket.id);
-
-    // Confirm to this client
-    io.to(socket.id).emit("room-joined", { roomId });
-
-    // Update viewer count
-    updateViewerCount(roomId);
-
-    console.log(`${name || "Guest"} joined ${roomId}`);
+  // ✅ Find a match
+  socket.on("find-match", ({ name }) => {
+    if (waitingUsers.length > 0) {
+      const partnerId = waitingUsers.shift();
+      // Notify both users
+      io.to(socket.id).emit("matched", { partnerId });
+      io.to(partnerId).emit("matched", { partnerId: socket.id });
+    } else {
+      waitingUsers.push(socket.id);
+    }
+    console.log(`${name || "Guest"} is looking for a match`);
   });
 
-  // ✅ Direct offer/answer/ICE forwarding
+  // ✅ Offer/Answer exchange
   socket.on("offer", ({ to, offer }) => {
     io.to(to).emit("offer", { from: socket.id, offer });
   });
@@ -65,33 +53,40 @@ io.on("connection", (socket) => {
     io.to(to).emit("answer", { from: socket.id, answer });
   });
 
+  // ✅ ICE candidates
   socket.on("ice-candidate", ({ to, candidate }) => {
     io.to(to).emit("ice-candidate", { from: socket.id, candidate });
   });
 
-  // ✅ Chat + reactions
+  // ✅ Chat messages
   socket.on("chat-message", (msg) => {
     if (!msg) return;
-    io.to("main-room").emit("chat-message", msg);
+    // Relay to partner only
+    if (msg.partnerId) {
+      io.to(msg.partnerId).emit("chat-message", msg);
+    } else {
+      // fallback broadcast
+      socket.broadcast.emit("chat-message", msg);
+    }
   });
 
+  // ✅ Reactions
   socket.on("reaction", (reaction) => {
     if (!reaction) return;
-    io.to("main-room").emit("reaction", reaction);
+    if (reaction.partnerId) {
+      io.to(reaction.partnerId).emit("reaction", reaction);
+    } else {
+      socket.broadcast.emit("reaction", reaction);
+    }
   });
 
   // ✅ Disconnect cleanup
   socket.on("disconnect", () => {
-    for (const [roomId, members] of rooms.entries()) {
-      if (members.has(socket.id)) {
-        members.delete(socket.id);
-        rooms.set(roomId, members);
-        updateViewerCount(roomId);
-      }
-    }
+    const idx = waitingUsers.indexOf(socket.id);
+    if (idx !== -1) waitingUsers.splice(idx, 1);
     console.log("Disconnected:", socket.id);
   });
 });
 
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Matchmaking server running on ${PORT}`));
