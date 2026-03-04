@@ -35,13 +35,16 @@ io.on("connection", (socket) => {
   socket.on("find-match", ({ name }) => {
     if (waitingUsers.length > 0) {
       const partnerId = waitingUsers.shift();
-      // Notify both users
-      io.to(socket.id).emit("matched", { partnerId });
-      io.to(partnerId).emit("matched", { partnerId: socket.id });
+
+      // Decide roles: first in queue = offerer, new joiner = answerer
+      io.to(socket.id).emit("matched", { partnerId, role: "answerer" });
+      io.to(partnerId).emit("matched", { partnerId: socket.id, role: "offerer" });
+
+      console.log(`Matched ${socket.id} (answerer) with ${partnerId} (offerer)`);
     } else {
       waitingUsers.push(socket.id);
+      console.log(`${name || "Guest"} is waiting for a match`);
     }
-    console.log(`${name || "Guest"} is looking for a match`);
   });
 
   // ✅ Offer/Answer exchange
@@ -61,12 +64,8 @@ io.on("connection", (socket) => {
   // ✅ Chat messages
   socket.on("chat-message", (msg) => {
     if (!msg) return;
-    // Relay to partner only
     if (msg.partnerId) {
       io.to(msg.partnerId).emit("chat-message", msg);
-    } else {
-      // fallback broadcast
-      socket.broadcast.emit("chat-message", msg);
     }
   });
 
@@ -75,8 +74,6 @@ io.on("connection", (socket) => {
     if (!reaction) return;
     if (reaction.partnerId) {
       io.to(reaction.partnerId).emit("reaction", reaction);
-    } else {
-      socket.broadcast.emit("reaction", reaction);
     }
   });
 
