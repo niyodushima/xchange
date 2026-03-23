@@ -1,51 +1,43 @@
-import React, { useState } from "react";
-import "./Login.css";
+import { useState } from "react";
+import axios from "axios";
 
-export default function Login({ onSubmit }) {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
+export default function Login() {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
-    if (!formData.email || !formData.password) {
-      setError("Both fields are required.");
-      return;
+    setLoading(true);
+    try {
+      const res = await axios.post("/api/auth/login", form);
+      localStorage.setItem("token", res.data.token);
+      alert("Logged in successfully!");
+      setForm({ email: "", password: "" });
+    } catch (err) {
+      alert(err.response?.data?.msg || "Error logging in");
+    } finally {
+      setLoading(false);
     }
-
-    onSubmit?.(formData);
   };
 
   return (
-    <div className="auth-container">
-      <h2>Log In</h2>
-      <form onSubmit={handleSubmit} className="auth-form">
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-        />
-
-        {error && <div className="error">{error}</div>}
-
-        <button type="submit" className="primary">Log In</button>
-      </form>
-      <p className="auth-link">
-        Don’t have an account? <a href="/signup">Sign up</a>
-      </p>
-    </div>
+    <form onSubmit={handleSubmit}>
+      <h2>Login</h2>
+      <input
+        placeholder="Email"
+        type="email"
+        value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+      />
+      <input
+        placeholder="Password"
+        type="password"
+        value={form.password}
+        onChange={(e) => setForm({ ...form, password: e.target.value })}
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? "Logging in..." : "Login"}
+      </button>
+    </form>
   );
 }
