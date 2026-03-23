@@ -84,6 +84,68 @@ io.on("connection", (socket) => {
     console.log("Disconnected:", socket.id);
   });
 });
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+
+// Example User model (adjust if you use Prisma or Mongoose)
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+
+// ✅ Create transporter with Zoho SMTP
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || "smtp.zoho.com",
+  port: process.env.EMAIL_PORT || 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+// ✅ Signup route
+app.post("/api/auth/signup", async (req, res) => {
+  const { name, email, password } = req.body;
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) return res.status(400).json({ msg: "Email already registered" });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({ data: { name, email, password: hashed } });
+
+    // Send welcome email
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Welcome to Zazza 🎉",
+      text: `Hi ${name}, thanks for signing up!`,
+    });
+
+    res.json({ msg: "User registered successfully" });
+  } catch (err) {
+    res.status(500).json({ msg: "Error signing up", error: err.message });
+  }
+});
+
+// ✅ Login route
+app.post("/api/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(400).json({ msg: "Invalid credentials" });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ msg: "Invalid credentials" });
+
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "1h" });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+  } catch (err) {
+    res.status(500).json({ msg: "Error logging in", error: err.message });
+  }
+});
+
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => console.log(`🚀 Matchmaking server running on ${PORT}`));
