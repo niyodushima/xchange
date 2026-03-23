@@ -2,7 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
-const User = require("./models/User"); // Mongoose model
+const User = require("../models/User"); // import User model
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
