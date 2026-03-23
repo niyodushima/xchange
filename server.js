@@ -1,3 +1,14 @@
+const mongoose = require("mongoose");
+const authRoutes = require("./routes/auth");
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
+
+// Mount auth routes
+app.use("/api/auth", authRoutes);
+
 // ✅ Load environment variables in development
 if (process.env.NODE_ENV !== "production") {
   try {
