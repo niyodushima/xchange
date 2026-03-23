@@ -1,8 +1,9 @@
+// ✅ Load environment variables in development
 if (process.env.NODE_ENV !== "production") {
   try {
     require("dotenv").config();
   } catch (err) {
-    console.warn("dotenv not installed in production, skipping...");
+    console.warn("dotenv not installed, skipping...");
   }
 }
 
@@ -15,6 +16,7 @@ const app = express();
 app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
 app.use(express.json());
 
+// Health check route
 app.get("/", (req, res) => {
   res.send("✅ Backend is running");
 });
@@ -49,32 +51,26 @@ io.on("connection", (socket) => {
 
   // ✅ Offer/Answer exchange
   socket.on("offer", ({ to, offer }) => {
-    io.to(to).emit("offer", { from: socket.id, offer });
+    if (to && offer) io.to(to).emit("offer", { from: socket.id, offer });
   });
 
   socket.on("answer", ({ to, answer }) => {
-    io.to(to).emit("answer", { from: socket.id, answer });
+    if (to && answer) io.to(to).emit("answer", { from: socket.id, answer });
   });
 
   // ✅ ICE candidates
   socket.on("ice-candidate", ({ to, candidate }) => {
-    io.to(to).emit("ice-candidate", { from: socket.id, candidate });
+    if (to && candidate) io.to(to).emit("ice-candidate", { from: socket.id, candidate });
   });
 
   // ✅ Chat messages
   socket.on("chat-message", (msg) => {
-    if (!msg) return;
-    if (msg.partnerId) {
-      io.to(msg.partnerId).emit("chat-message", msg);
-    }
+    if (msg?.partnerId) io.to(msg.partnerId).emit("chat-message", msg);
   });
 
   // ✅ Reactions
   socket.on("reaction", (reaction) => {
-    if (!reaction) return;
-    if (reaction.partnerId) {
-      io.to(reaction.partnerId).emit("reaction", reaction);
-    }
+    if (reaction?.partnerId) io.to(reaction.partnerId).emit("reaction", reaction);
   });
 
   // ✅ Disconnect cleanup
