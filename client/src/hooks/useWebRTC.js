@@ -4,7 +4,11 @@ import { io } from "socket.io-client";
 const SIGNALING_URL =
   process.env.REACT_APP_SIGNALING_URL || "https://zazza-backend.onrender.com";
 
-const iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
+const iceServers = [
+  { urls: "stun:stun.l.google.com:19302" },
+  // Add TURN for reliability if needed:
+  // { urls: "turn:your-turn-server", username: "user", credential: "pass" }
+];
 
 export function useWebRTC(username = "Guest") {
   const localVideoRef = useRef(null);
@@ -42,6 +46,7 @@ export function useWebRTC(username = "Guest") {
     }
 
     pc.ontrack = (event) => {
+      console.log("✅ Remote track received:", event.streams[0]);
       setRemoteStream(event.streams[0]);
     };
 
@@ -69,6 +74,7 @@ export function useWebRTC(username = "Guest") {
 
     // ✅ Matched with partner and role
     socket.on("matched", async ({ partnerId, role }) => {
+      console.log("Matched with partner:", partnerId, "Role:", role);
       setPartnerId(partnerId);
       const stream = await startLocalVideo();
       const pc = createPeerConnection(partnerId, stream);
@@ -81,32 +87,28 @@ export function useWebRTC(username = "Guest") {
     });
 
     socket.on("offer", async ({ from, offer }) => {
+      console.log("📩 Received offer from", from);
       setPartnerId(from);
       const stream = await startLocalVideo();
       const pc = createPeerConnection(from, stream);
 
-      if (pc.signalingState === "stable") {
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit("answer", { to: from, answer });
-      }
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit("answer", { to: from, answer });
     });
 
     socket.on("answer", async ({ from, answer }) => {
-      if (pcRef.current && pcRef.current.signalingState === "have-local-offer") {
+      console.log("📩 Received answer from", from);
+      if (pcRef.current) {
         await pcRef.current.setRemoteDescription(
           new RTCSessionDescription(answer)
-        );
-      } else {
-        console.warn(
-          "Skipping setRemoteDescription for answer, wrong state:",
-          pcRef.current?.signalingState
         );
       }
     });
 
     socket.on("ice-candidate", async ({ from, candidate }) => {
+      console.log("📩 Received ICE candidate");
       if (pcRef.current) {
         try {
           await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));

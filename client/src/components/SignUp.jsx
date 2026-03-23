@@ -1,74 +1,47 @@
-import React, { useState } from "react";
-import "./SignUp.css";
+import { useState } from "react";
+import axios from "axios";
 
-export default function SignUp({ onSubmit }) {
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-  const [error, setError] = useState("");
+export default function SignUp() {
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
-    if (!formData.username || !formData.email || !formData.password) {
-      setError("All fields are required.");
-      return;
+    setLoading(true);
+    try {
+      const res = await axios.post("/api/auth/signup", form);
+      alert(res.data.msg);
+      setForm({ name: "", email: "", password: "" });
+    } catch (err) {
+      alert(err.response?.data?.msg || "Error signing up");
+    } finally {
+      setLoading(false);
     }
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    onSubmit?.(formData);
   };
 
   return (
-    <div className="auth-container">
-      <h2>Create Account</h2>
-      <form onSubmit={handleSubmit} className="auth-form">
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          value={formData.username}
-          onChange={handleChange}
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-        />
-        <input
-          type="password"
-          name="confirmPassword"
-          placeholder="Confirm Password"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-        />
-
-        {error && <div className="error">{error}</div>}
-
-        <button type="submit" className="primary">Sign Up</button>
-      </form>
-      <p className="auth-link">
-        Already have an account? <a href="/login">Log in</a>
-      </p>
-    </div>
+    <form onSubmit={handleSubmit}>
+      <h2>Sign Up</h2>
+      <input
+        placeholder="Name"
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+      />
+      <input
+        placeholder="Email"
+        type="email"
+        value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+      />
+      <input
+        placeholder="Password"
+        type="password"
+        value={form.password}
+        onChange={(e) => setForm({ ...form, password: e.target.value })}
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? "Signing up..." : "Sign Up"}
+      </button>
+    </form>
   );
 }
